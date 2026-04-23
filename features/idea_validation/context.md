@@ -1,6 +1,6 @@
 # FEATURE: Idea Validation Engine
 
-> **Status:** Planning
+> **Status:** Planning Phase
 
 ## Purpose
 The core value proposition of VentureLens. This feature allows founders to submit a structured description of their startup idea and receive an AI-generated evaluation (Venture Score + Insights).
