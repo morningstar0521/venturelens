@@ -1,44 +1,70 @@
 "use server"
 
 import bcrypt from "bcryptjs"
-import { RegisterSchema } from "@/lib/validations"
+import { FounderRegisterSchema, EmployeeRegisterSchema } from "@/lib/validations"
+import { getUserByEmail, createUser } from "@/lib/db/users"
 
 export type RegisterResult =
   | { success: string; error?: never }
   | { error: string; success?: never }
 
-export async function register(formData: FormData): Promise<RegisterResult> {
-  // 1. Parse and validate form data
-  const parsed = RegisterSchema.safeParse({
-    name: formData.get("name"),
-    email: formData.get("email"),
-    password: formData.get("password"),
+// ─── Founder Registration ─────────────────────────────────────────────────
+export async function registerFounder(formData: FormData): Promise<RegisterResult> {
+  const parsed = FounderRegisterSchema.safeParse({
+    name:        formData.get("name"),
+    email:       formData.get("email"),
+    password:    formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
+    startupName: formData.get("startupName"),
+    terms:       formData.get("terms") === "true",
   })
-
   if (!parsed.success) {
-    const firstError = parsed.error.issues[0]?.message
-    return { error: firstError ?? "Invalid fields." }
+    return { error: parsed.error.issues[0]?.message ?? "Invalid fields." }
   }
 
-  const { name, email, password } = parsed.data
+  const { name, email, password, startupName } = parsed.data
 
-  // 2. Hash password
-  const hashedPassword = await bcrypt.hash(password, 12)
+  // Check duplicate email
+  const existing = await getUserByEmail(email)
+  if (existing) return { error: "An account with this email already exists." }
 
-  // ─── TODO (Phase 2): Replace with Supabase queries ───────────────
-  // Check if user already exists:
-  // const existing = await prisma.user.findUnique({ where: { email } })
-  // if (existing) return { error: "An account with this email already exists." }
-  //
-  // Create the new user:
-  // await prisma.user.create({
-  //   data: { name, email, password: hashedPassword, role: "user" },
-  // })
-  // ─────────────────────────────────────────────────────────────────
+  const passwordHash = await bcrypt.hash(password, 12)
+  await createUser({ name, email, passwordHash, role: "founder", startupName })
 
-  // MOCK: Log what would be saved — remove this block in Phase 2
-  console.log("[MOCK] Would create user →", { name, email, hashedPassword })
+  return { success: "Founder account created! You can now sign in." }
+}
 
-  return { success: "Account created! You can now sign in." }
+// ─── Employee Registration ─────────────────────────────────────────────────
+export async function registerEmployee(formData: FormData): Promise<RegisterResult> {
+  const skillsRaw = formData.get("skills")
+  const skills = typeof skillsRaw === "string" && skillsRaw.length > 0
+    ? skillsRaw.split(",").map((s) => s.trim()).filter(Boolean)
+    : []
+
+  const parsed = EmployeeRegisterSchema.safeParse({
+    name:        formData.get("name"),
+    email:       formData.get("email"),
+    password:    formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+    skills,
+    experience:  formData.get("experience"),
+  })
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid fields." }
+  }
+
+  const { name, email, password, experience } = parsed.data
+
+  const existing = await getUserByEmail(email)
+  if (existing) return { error: "An account with this email already exists." }
+
+  const passwordHash = await bcrypt.hash(password, 12)
+  await createUser({ name, email, passwordHash, role: "employee", skills, experience })
+
+  return { success: "Employee account created! You can now sign in." }
+}
+
+// ─── Legacy generic register (kept for backward compat) ──────────────────
+export async function register(): Promise<RegisterResult> {
+  return { error: "Please use the role-specific registration flow." }
 }

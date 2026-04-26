@@ -1,36 +1,47 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
-import { LoginSchema } from "@/lib/validations"
+import { getUserByEmail } from "@/lib/db/users"
+
+// ─── Hardcoded Admin Credentials ─────────────────────────────────────────
+// For production: move these to .env variables (already done in .env.local).
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@venturelens.ai"
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "Admin@VL2024!"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
+      credentials: {
+        email:    { label: "Email",    type: "email"    },
+        password: { label: "Password", type: "password" },
+        role:     { label: "Role",     type: "text"     },
+      },
       async authorize(credentials) {
-        // Validate incoming credentials shape with Zod
-        const parsed = LoginSchema.safeParse(credentials)
-        if (!parsed.success) return null
+        const email    = credentials?.email    != null ? String(credentials.email)    : undefined
+        const password = credentials?.password != null ? String(credentials.password) : undefined
+        const role     = credentials?.role     != null ? String(credentials.role)     : undefined
 
-        const { email, password } = parsed.data
+        if (!email || !password || !role) return null
 
-        // ─── TODO (Phase 2): Replace with Supabase query ─────────────
-        // const user = await prisma.user.findUnique({ where: { email } })
-        // if (!user || !user.password) return null
-        // const passwordsMatch = await bcrypt.compare(password, user.password)
-        // if (!passwordsMatch) return null
-        // return { id: user.id, name: user.name, email: user.email, role: user.role }
-        // ─────────────────────────────────────────────────────────────
-
-        // MOCK: test@example.com / password123
-        if (email === "test@example.com") {
-          const MOCK_HASH = await bcrypt.hash("password123", 10)
-          const match = await bcrypt.compare(password, MOCK_HASH)
-          if (match) {
-            return { id: "mock-user-1", name: "Test User", email, role: "user" }
+        // ── Admin: hardcoded check (no DB) ──────────────────────────
+        if (role === "admin") {
+          if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+            return { id: "admin-1", name: "Administrator", email, role: "admin" }
           }
+          return null
         }
 
-        return null
+        // ── Founder / Employee: DB lookup ───────────────────────────
+        const user = await getUserByEmail(email)
+        if (!user) return null
+
+        // Ensure the role matches what the user signed up as
+        if (user.role !== role) return null
+
+        const passwordsMatch = await bcrypt.compare(password, user.password_hash)
+        if (!passwordsMatch) return null
+
+        return { id: user.id, name: user.name, email: user.email, role: user.role }
       },
     }),
   ],
@@ -40,15 +51,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id as string
-        token.role = (user.role ?? "user") as string
+        token.id   = user.id as string
+        token.role = (user.role ?? "founder") as string
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id
-        session.user.role = token.role
+        session.user.id   = token.id   as string
+        session.user.role = token.role as string
       }
       return session
     },

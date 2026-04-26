@@ -1,7 +1,14 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Fix: Turbopack incorrectly infers the workspace root from /Users/shubhghiya/package-lock.json.
+  // Explicitly point it to this project directory so /public assets resolve correctly.
+  experimental: {
+    turbo: {
+      root: path.resolve(__dirname),
+    },
+  },
 };
 
 export default nextConfig;

@@ -9,35 +9,30 @@ export type LoginResult =
   | { error: string; success?: never }
 
 export async function login(formData: FormData): Promise<LoginResult> {
-  // 1. Validate form data shape
+  // 1. Validate shape (role included)
   const parsed = LoginSchema.safeParse({
-    email: formData.get("email"),
+    email:    formData.get("email"),
     password: formData.get("password"),
+    role:     formData.get("role"),
   })
-
   if (!parsed.success) {
-    const firstError = parsed.error.issues[0]?.message
-    return { error: firstError ?? "Invalid fields." }
+    return { error: parsed.error.issues[0]?.message ?? "Invalid fields." }
   }
 
-  const { email, password } = parsed.data
+  const { email, password, role } = parsed.data
 
-  // 2. Attempt sign in — auth logic lives in auth.ts authorize()
+  // 2. Attempt sign-in (auth logic is in auth.ts authorize())
   try {
-    await signIn("credentials", { email, password, redirect: false })
+    await signIn("credentials", { email, password, role, redirect: false })
     return { success: "Signed in successfully!" }
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
-        case "CredentialsSignin":
-          return { error: "Invalid email or password." }
-        case "AccessDenied":
-          return { error: "Access denied." }
-        default:
-          return { error: "Something went wrong. Please try again." }
+        case "CredentialsSignin": return { error: "Invalid email or password." }
+        case "AccessDenied":     return { error: "Access denied." }
+        default:                 return { error: "Something went wrong. Please try again." }
       }
     }
-    // Re-throw non-auth errors (e.g. network issues)
     throw error
   }
 }

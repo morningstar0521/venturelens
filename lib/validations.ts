@@ -1,42 +1,65 @@
 import { z } from "zod"
 
-// ─── Login Schema ─────────────────────────────────────────────────────────────
+// ─── Login Schema ─────────────────────────────────────────────────────────
 export const LoginSchema = z.object({
-  email: z
-    .string()
-    .min(1, "Email is required")
-    .email("Please enter a valid email"),
-  password: z
-    .string()
-    .min(1, "Password is required")
-    .min(6, "Password must be at least 6 characters"),
+  email: z.string().min(1, "Email is required").email("Please enter a valid email"),
+  password: z.string().min(1, "Password is required").min(6, "Password must be at least 6 characters"),
+  role: z.enum(["founder", "employee", "admin"]),
 })
-
 export type LoginInput = z.infer<typeof LoginSchema>
 
-// ─── Register Schema ──────────────────────────────────────────────────────────
-export const RegisterSchema = z
+// ─── Founder Register Schema ──────────────────────────────────────────────
+export const FounderRegisterSchema = z
   .object({
-    name: z
-      .string()
-      .min(1, "Name is required")
-      .min(2, "Name must be at least 2 characters")
-      .max(50, "Name must be at most 50 characters"),
-    email: z
-      .string()
-      .min(1, "Email is required")
-      .email("Please enter a valid email"),
+    name: z.string().min(2, "Name must be at least 2 characters").max(50),
+    email: z.string().min(1, "Email is required").email("Please enter a valid email"),
     password: z
       .string()
-      .min(1, "Password is required")
       .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-      .regex(/[0-9]/, "Password must contain at least one number"),
+      .regex(/[A-Z]/, "Must contain at least one uppercase letter")
+      .regex(/[0-9]/, "Must contain at least one number"),
     confirmPassword: z.string().min(1, "Please confirm your password"),
+    startupName: z.string().min(2, "Startup/Idea name is required").max(200),
+    terms: z.boolean().refine((v) => v === true, "You must agree to the terms"),
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine((d) => d.password === d.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
   })
+export type FounderRegisterInput = z.infer<typeof FounderRegisterSchema>
 
+// ─── Employee Register Schema ─────────────────────────────────────────────
+export const EmployeeRegisterSchema = z
+  .object({
+    name: z.string().min(2, "Name must be at least 2 characters").max(50),
+    email: z.string().min(1, "Email is required").email("Please enter a valid email"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Z]/, "Must contain at least one uppercase letter")
+      .regex(/[0-9]/, "Must contain at least one number"),
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+    skills: z.array(z.string()).min(1, "Add at least one skill"),
+    experience: z.enum(["junior", "mid", "senior", "lead"], {
+      message: "Please select your experience level",
+    }),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  })
+export type EmployeeRegisterInput = z.infer<typeof EmployeeRegisterSchema>
+
+// ─── Legacy plain register schema (kept for backward compat) ─────────────
+export const RegisterSchema = z
+  .object({
+    name: z.string().min(2, "Name must be at least 2 characters").max(50),
+    email: z.string().min(1, "Email is required").email("Please enter a valid email"),
+    password: z.string().min(8).regex(/[A-Z]/).regex(/[0-9]/),
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  })
 export type RegisterInput = z.infer<typeof RegisterSchema>
