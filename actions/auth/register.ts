@@ -65,6 +65,6 @@ export async function registerEmployee(formData: FormData): Promise<RegisterResu
 }
 
 // ─── Legacy generic register (kept for backward compat) ──────────────────
-export async function register(): Promise<RegisterResult> {
+export async function register(_formData?: FormData): Promise<RegisterResult> {
   return { error: "Please use the role-specific registration flow." }
 }

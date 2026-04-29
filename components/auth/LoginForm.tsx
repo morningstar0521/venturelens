@@ -12,7 +12,7 @@ import { LoginSchema, type LoginInput } from "@/lib/validations"
 export function LoginForm() {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [formData, setFormData] = useState<LoginInput>({ email: "", password: "" })
+  const [formData, setFormData] = useState<LoginInput>({ email: "", password: "", role: "founder" })
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
   const [generalError, setGeneralError] = useState("")
 

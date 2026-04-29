@@ -3,10 +3,7 @@ import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { getUserByEmail } from "@/lib/db/users"
 
-// ─── Hardcoded Admin Credentials ─────────────────────────────────────────
-// For production: move these to .env variables (already done in .env.local).
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@venturelens.ai"
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "Admin@VL2024!"
+// Admin credentials are now stored in the database
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -23,15 +20,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!email || !password || !role) return null
 
-        // ── Admin: hardcoded check (no DB) ──────────────────────────
-        if (role === "admin") {
-          if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-            return { id: "admin-1", name: "Administrator", email, role: "admin" }
-          }
-          return null
-        }
-
-        // ── Founder / Employee: DB lookup ───────────────────────────
+        // ── Database lookup for all roles ───────────────────────────
         const user = await getUserByEmail(email)
         if (!user) return null
 

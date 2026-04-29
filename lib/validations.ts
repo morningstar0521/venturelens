@@ -63,3 +63,18 @@ export const RegisterSchema = z
     path: ["confirmPassword"],
   })
 export type RegisterInput = z.infer<typeof RegisterSchema>
+
+// ─── Idea Schema ──────────────────────────────────────────────────────────
+export const IdeaSchema = z.object({
+  title: z.string().min(5, "Title must be at least 5 characters").max(200),
+  description: z.string().min(20, "Please provide more details (min 20 characters)"),
+  industry: z.string().min(2, "Industry is required").max(100),
+  stage: z.enum(["idea", "mvp", "growth"]),
+})
+export type IdeaInput = z.infer<typeof IdeaSchema>
+
+// ─── Application Schema ───────────────────────────────────────────────────
+export const ApplicationSchema = z.object({
+  message: z.string().min(10, "Please write a brief message (min 10 characters)").max(1000),
+})
+export type ApplicationInput = z.infer<typeof ApplicationSchema>

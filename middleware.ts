@@ -15,10 +15,12 @@ export default auth((req) => {
     pathname.startsWith("/settings")
 
   const isAdminPage = pathname.startsWith("/admin/dashboard")
+  const isFounderPage = pathname.startsWith("/dashboard/founder")
+  const isEmployeePage = pathname.startsWith("/dashboard/employee")
 
   // Redirect logged-in users away from auth pages
   if (isAuthPage && isLoggedIn) {
-    const dest = role === "admin" ? "/admin/dashboard" : "/dashboard"
+    const dest = role === "admin" ? "/admin/dashboard" : (role === "founder" ? "/dashboard/founder" : "/dashboard/employee")
     return NextResponse.redirect(new URL(dest, req.url))
   }
 
@@ -37,6 +39,14 @@ export default auth((req) => {
     const loginUrl = new URL("/login", req.url)
     loginUrl.searchParams.set("callbackUrl", pathname)
     return NextResponse.redirect(loginUrl)
+  }
+
+  // Role-enforce founder and employee routes
+  if (isFounderPage && role !== "founder") {
+    return NextResponse.redirect(new URL("/dashboard", req.url))
+  }
+  if (isEmployeePage && role !== "employee") {
+    return NextResponse.redirect(new URL("/dashboard", req.url))
   }
 
   return NextResponse.next()

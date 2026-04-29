@@ -1,7 +1,7 @@
 import { sql } from "@/lib/db"
 
 // ─── Types ────────────────────────────────────────────────────────────────
-export type UserRole = "founder" | "employee"
+export type UserRole = "founder" | "employee" | "admin"
 
 export interface DbUser {
   id: string
@@ -12,6 +12,7 @@ export interface DbUser {
   startup_name: string | null
   skills: string[] | null
   experience: string | null
+  is_active: boolean
   created_at: Date
 }
 
@@ -24,10 +25,11 @@ export async function initDb() {
       name VARCHAR(100) NOT NULL,
       email VARCHAR(255) UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
-      role VARCHAR(20) NOT NULL CHECK (role IN ('founder', 'employee')),
+      role VARCHAR(20) NOT NULL CHECK (role IN ('founder', 'employee', 'admin')),
       startup_name VARCHAR(200),
       skills TEXT[],
       experience VARCHAR(50),
+      is_active BOOLEAN DEFAULT TRUE,
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `
@@ -64,4 +66,32 @@ export async function createUser(data: {
     RETURNING id
   `
   return rows[0] as { id: string }
+}
+
+export async function getAllUsers(): Promise<DbUser[]> {
+  const rows = await sql`
+    SELECT * FROM users ORDER BY created_at DESC
+  `
+  return rows as DbUser[]
+}
+
+export async function getUserById(id: string): Promise<DbUser | null> {
+  const rows = await sql`
+    SELECT * FROM users WHERE id = ${id} LIMIT 1
+  `
+  return (rows[0] as DbUser) ?? null
+}
+
+export async function updateUserStatus(id: string, isActive: boolean): Promise<void> {
+  await sql`
+    UPDATE users SET is_active = ${isActive} WHERE id = ${id}
+  `
+}
+
+export async function updateUserProfile(id: string, data: { skills?: string[], experience?: string }): Promise<void> {
+  await sql`
+    UPDATE users 
+    SET skills = ${data.skills ?? null}, experience = ${data.experience ?? null}
+    WHERE id = ${id}
+  `
 }

@@ -3,11 +3,15 @@
 // Protect this with a secret in production.
 import { NextResponse } from "next/server"
 import { initDb } from "@/lib/db/users"
+import { initIdeasDb } from "@/lib/db/ideas"
+import { initApplicationsDb } from "@/lib/db/applications"
 
 export async function GET() {
   try {
     await initDb()
-    return NextResponse.json({ ok: true, message: "Database initialised successfully." })
+    await initIdeasDb()
+    await initApplicationsDb()
+    return NextResponse.json({ ok: true, message: "Database tables initialised successfully." })
   } catch (err) {
     console.error("[db/init]", err)
     return NextResponse.json({ ok: false, error: String(err) }, { status: 500 })
