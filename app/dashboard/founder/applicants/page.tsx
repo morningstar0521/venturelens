@@ -1,91 +1,214 @@
 import { auth } from "@/auth"
 import { getIdeasByFounder } from "@/lib/db/ideas"
-import { getApplicationsForIdea, DbApplication } from "@/lib/db/applications"
+import { getApplicationsForIdea } from "@/lib/db/applications"
 import { getUserById } from "@/lib/db/users"
-import { DataTable } from "@/components/dashboard/DataTable"
 import { StatusBadge } from "@/components/dashboard/StatusBadge"
+import { TeamCard } from "@/components/dashboard/TeamCard"
 import { updateApplicationStatusAction } from "@/actions/applications"
+import { DbApplication, AssignedRole } from "@/lib/db/applications"
+import { DbUser } from "@/lib/db/users"
 
-export const metadata = { title: "Applicants — VentureLens" }
+import { Lock, Users, Zap } from "lucide-react"
 
-interface AppWithIdea extends DbApplication {
+export const metadata = { title: "Applicants & Team — VentureLens" }
+
+interface EnrichedApp extends DbApplication {
+  user: DbUser | null
   ideaTitle: string
+  ideaScore: number | null
 }
 
 export default async function FounderApplicantsPage() {
   const session = await auth()
   const ideas = await getIdeasByFounder(session!.user.id)
 
-  const allApplications: AppWithIdea[] = []
-
+  // Collect all apps with enriched user + idea data
+  const allApps: EnrichedApp[] = []
   for (const idea of ideas) {
     const apps = await getApplicationsForIdea(idea.id)
-    allApplications.push(...apps.map(app => ({ ...app, ideaTitle: idea.title })))
+    for (const app of apps) {
+      const user = await getUserById(app.employee_id)
+      allApps.push({ ...app, user, ideaTitle: idea.title, ideaScore: idea.venture_score })
+    }
   }
+  allApps.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
-  allApplications.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  const pendingApps   = allApps.filter((a) => a.status === "pending")
+  const acceptedApps  = allApps.filter((a) => a.status === "accepted")
+  const rejectedApps  = allApps.filter((a) => a.status === "rejected")
 
-  const data = await Promise.all(allApplications.map(async (app) => {
-    const user = await getUserById(app.employee_id)
-
-    async function accept() {
-      "use server"
-      await updateApplicationStatusAction(app.id, "accepted")
-    }
-    async function reject() {
-      "use server"
-      await updateApplicationStatusAction(app.id, "rejected")
-    }
-
-    return [
-      <div key={`user-${app.id}`}>
-        <div className="font-bold text-white">{user?.name || "Unknown User"}</div>
-        <div className="text-xs text-accent-muted">{user?.email}</div>
-      </div>,
-      <div key={`idea-${app.id}`} className="text-sm font-medium text-accent-yellow max-w-[150px] truncate" title={app.ideaTitle}>
-        {app.ideaTitle}
-      </div>,
-      <div key={`skills-${app.id}`} className="text-xs text-accent-muted">
-        <span className="capitalize text-white">{user?.experience || "N/A"}</span>
-        {user?.skills && (
-          <div className="mt-1 truncate max-w-[150px]" title={user.skills.join(", ")}>
-            {user.skills.join(", ")}
-          </div>
-        )}
-      </div>,
-      <div key={`msg-${app.id}`} className="text-sm text-accent-muted max-w-[200px] whitespace-normal line-clamp-2" title={app.message || ""}>
-        {app.message}
-      </div>,
-      <StatusBadge key={`status-${app.id}`} status={app.status} />,
-      <div key={`actions-${app.id}`} className="flex gap-2">
-        {app.status === "pending" && (
-          <>
-            <form action={accept}>
-              <button type="submit" className="text-xs font-semibold px-3 py-1.5 rounded-lg border text-success border-success/20 hover:bg-success/10 transition-colors">
-                Accept
-              </button>
-            </form>
-            <form action={reject}>
-              <button type="submit" className="text-xs font-semibold px-3 py-1.5 rounded-lg border text-error border-error/20 hover:bg-error/10 transition-colors">
-                Reject
-              </button>
-            </form>
-          </>
-        )}
-      </div>,
-    ]
-  }))
-
-  const columns = ["Applicant", "Idea", "Experience/Skills", "Message", "Status", "Actions"]
+  // Score-locked ideas (< 70)
+  const lockedIdeas   = ideas.filter((i) => i.venture_score !== null && i.venture_score < 70)
+  const unlockedIdeas = ideas.filter((i) => i.venture_score !== null && i.venture_score >= 70)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-accent-yellow">Applicants</h1>
-        <p className="text-sm text-accent-muted mt-1">Review contributors who want to join your startups.</p>
+        <h1 className="text-2xl font-bold text-accent-yellow">Applicants &amp; Team</h1>
+        <p className="text-sm text-accent-muted mt-1">
+          Manage contributors applying to your ideas. Ideas with Venture Score ≥ 70 unlock hiring.
+        </p>
       </div>
 
-      <DataTable columns={columns} data={data} emptyMessage="No applications received yet." />
+      {/* Unlock summary */}
+      {ideas.some((i) => i.venture_score !== null) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="glass-panel rounded-2xl p-5 border border-success/10">
+            <div className="flex items-center gap-3 mb-2">
+              <Zap className="w-5 h-5 text-success" />
+              <span className="font-bold text-success">Unlocked Ideas</span>
+            </div>
+            <div className="text-3xl font-black text-white">{unlockedIdeas.length}</div>
+            <p className="text-xs text-white/40 mt-1">Ideas with score ≥ 70 — open for contributors</p>
+          </div>
+          <div className="glass-panel rounded-2xl p-5 border border-white/5">
+            <div className="flex items-center gap-3 mb-2">
+              <Lock className="w-5 h-5 text-white/40" />
+              <span className="font-bold text-white/50">Locked Ideas</span>
+            </div>
+            <div className="text-3xl font-black text-white">{lockedIdeas.length}</div>
+            <p className="text-xs text-white/40 mt-1">Improve these ideas to unlock contributors</p>
+          </div>
+        </div>
+      )}
+
+      {/* Pending applications */}
+      <div>
+        <h2 className="text-lg font-bold text-accent-yellow mb-4 flex items-center gap-2">
+          <Users className="w-5 h-5" />
+          Pending Applications
+          {pendingApps.length > 0 && (
+            <span className="ml-1 px-2 py-0.5 rounded-full bg-btn/10 border border-btn/20 text-btn text-xs font-bold">
+              {pendingApps.length}
+            </span>
+          )}
+        </h2>
+
+        {pendingApps.length === 0 ? (
+          <div className="glass-panel rounded-2xl p-8 text-center border border-white/5 text-white/40">
+            No pending applications yet.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {pendingApps.map((app) => {
+              const isLocked = (app.ideaScore ?? 0) < 70
+
+              async function accept() {
+                "use server"
+                await updateApplicationStatusAction(app.id, "accepted")
+              }
+              async function reject() {
+                "use server"
+                await updateApplicationStatusAction(app.id, "rejected")
+              }
+
+              return (
+                <div
+                  key={app.id}
+                  className={`glass-panel rounded-2xl p-5 border transition-all ${isLocked ? "border-white/5 opacity-60" : "border-white/10"}`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    {/* Applicant info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 flex-wrap mb-1">
+                        <span className="font-bold text-white">{app.user?.name ?? "Unknown"}</span>
+                        <StatusBadge status={app.status} />
+                        {isLocked && (
+                          <span className="flex items-center gap-1 text-xs text-white/30">
+                            <Lock className="w-3 h-3" /> Score too low to accept
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-white/40 mb-1">{app.user?.email}</div>
+                      <div className="text-xs text-accent-muted">
+                        Idea: <span className="text-accent-yellow">{app.ideaTitle}</span>
+                        {app.ideaScore !== null && (
+                          <span className="ml-2 text-white/30">Score: <strong className="text-btn">{app.ideaScore}</strong></span>
+                        )}
+                      </div>
+                      {app.user?.skills && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {app.user.skills.slice(0, 5).map((s) => (
+                            <span key={s} className="text-xs px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-white/50">{s}</span>
+                          ))}
+                        </div>
+                      )}
+                      {app.message && (
+                        <p className="text-sm text-white/50 mt-2 line-clamp-2 italic">&quot;{app.message}&quot;</p>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    {!isLocked && (
+                      <div className="flex gap-2 shrink-0">
+                        <form action={accept}>
+                          <button
+                            type="submit"
+                            className="px-4 py-2 rounded-xl text-sm font-bold border text-success border-success/20 bg-success/5 hover:bg-success/15 transition-colors"
+                          >
+                            Accept
+                          </button>
+                        </form>
+                        <form action={reject}>
+                          <button
+                            type="submit"
+                            className="px-4 py-2 rounded-xl text-sm font-bold border text-error border-error/20 bg-error/5 hover:bg-error/15 transition-colors"
+                          >
+                            Reject
+                          </button>
+                        </form>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Team members (accepted) */}
+      {acceptedApps.length > 0 && (
+        <div>
+          <h2 className="text-lg font-bold text-success mb-4 flex items-center gap-2">
+            Your Team
+            <span className="ml-1 px-2 py-0.5 rounded-full bg-success/10 border border-success/20 text-success text-xs font-bold">
+              {acceptedApps.length}
+            </span>
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {acceptedApps.map((app) => (
+              <TeamCard
+                key={app.id}
+                applicationId={app.id}
+                name={app.user?.name ?? "Unknown"}
+                email={app.user?.email ?? ""}
+                skills={app.user?.skills ?? null}
+                experience={app.user?.experience ?? null}
+                assignedRole={app.assigned_role as AssignedRole | null}
+                ideaTitle={app.ideaTitle}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Rejected */}
+      {rejectedApps.length > 0 && (
+        <div>
+          <h2 className="text-base font-semibold text-white/40 mb-3">Rejected ({rejectedApps.length})</h2>
+          <div className="space-y-2">
+            {rejectedApps.map((app) => (
+              <div key={app.id} className="flex items-center gap-3 px-4 py-3 glass-panel rounded-xl border border-white/5 opacity-50">
+                <span className="text-sm text-white/60">{app.user?.name ?? "Unknown"}</span>
+                <span className="text-xs text-white/30">→ {app.ideaTitle}</span>
+                <StatusBadge status={app.status} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

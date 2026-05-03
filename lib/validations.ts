@@ -68,6 +68,10 @@ export type RegisterInput = z.infer<typeof RegisterSchema>
 export const IdeaSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters").max(200),
   description: z.string().min(20, "Please provide more details (min 20 characters)"),
+  problemStatement: z.string().min(20, "Describe the problem in detail (min 20 chars)").optional().or(z.literal("")),
+  solution: z.string().min(20, "Describe your solution (min 20 chars)").optional().or(z.literal("")),
+  targetAudience: z.string().min(10, "Describe your target audience (min 10 chars)").optional().or(z.literal("")),
+  revenueModel: z.string().min(10, "Describe your revenue model (min 10 chars)").optional().or(z.literal("")),
   industry: z.string().min(2, "Industry is required").max(100),
   stage: z.enum(["idea", "mvp", "growth"]),
 })

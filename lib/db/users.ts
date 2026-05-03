@@ -13,6 +13,7 @@ export interface DbUser {
   skills: string[] | null
   experience: string | null
   is_active: boolean
+  last_active_path: string | null
   created_at: Date
 }
 

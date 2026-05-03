@@ -14,7 +14,7 @@ export default async function AdminDashboardLayout({
   if (session.user.role !== "admin") redirect("/dashboard")
 
   const links = [
-    { label: "Overview", href: "/admin/dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
+    { label: "Overview", href: "/admin/dashboard", icon: <LayoutDashboard className="w-5 h-5" />, exact: true },
     { label: "Users", href: "/admin/dashboard/users", icon: <Users className="w-5 h-5" /> },
     { label: "Ideas", href: "/admin/dashboard/ideas", icon: <Lightbulb className="w-5 h-5" /> },
   ]

@@ -20,7 +20,7 @@ export default async function AdminUsersPage() {
       <div key={`name-${user.id}`} className="font-medium text-white">{user.name}</div>,
       <div key={`email-${user.id}`} className="text-accent-muted">{user.email}</div>,
       <span key={`role-${user.id}`} className="capitalize">{user.role}</span>,
-      <StatusBadge key={`status-${user.id}`} status={user.is_active} />,
+      <StatusBadge key={`status-${user.id}`} status={user.is_active ? "active" : "suspended"} />,
       <div key={`date-${user.id}`} className="text-accent-muted">
         {new Date(user.created_at).toLocaleDateString()}
       </div>,

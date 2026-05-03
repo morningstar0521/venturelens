@@ -14,10 +14,10 @@ export default async function FounderDashboardLayout({
   if (session.user.role !== "founder") redirect("/dashboard")
 
   const links = [
-    { label: "Overview", href: "/dashboard/founder", icon: <LayoutDashboard className="w-5 h-5" /> },
-    { label: "My Ideas", href: "/dashboard/founder/ideas", icon: <Lightbulb className="w-5 h-5" /> },
-    { label: "Submit Idea", href: "/dashboard/founder/ideas/new", icon: <PlusCircle className="w-5 h-5" /> },
-    { label: "Applicants", href: "/dashboard/founder/applicants", icon: <Users className="w-5 h-5" /> },
+    { label: "Overview",     href: "/dashboard/founder",              icon: <LayoutDashboard className="w-5 h-5" />, exact: true },
+    { label: "My Ideas",     href: "/dashboard/founder/ideas",        icon: <Lightbulb className="w-5 h-5" /> },
+    { label: "Submit Idea",  href: "/dashboard/founder/ideas/new",    icon: <PlusCircle className="w-5 h-5" /> },
+    { label: "Applicants",   href: "/dashboard/founder/applicants",   icon: <Users className="w-5 h-5" /> },
   ]
 
   return (

@@ -14,7 +14,7 @@ export default async function EmployeeDashboardLayout({
   if (session.user.role !== "employee") redirect("/dashboard")
 
   const links = [
-    { label: "Overview", href: "/dashboard/employee", icon: <LayoutDashboard className="w-5 h-5" /> },
+    { label: "Overview", href: "/dashboard/employee", icon: <LayoutDashboard className="w-5 h-5" />, exact: true },
     { label: "Browse Ideas", href: "/dashboard/employee/browse", icon: <Compass className="w-5 h-5" /> },
     { label: "My Applications", href: "/dashboard/employee/applications", icon: <Send className="w-5 h-5" /> },
     { label: "Profile", href: "/dashboard/employee/profile", icon: <User className="w-5 h-5" /> },
