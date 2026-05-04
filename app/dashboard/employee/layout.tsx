@@ -22,7 +22,7 @@ export default async function EmployeeDashboardLayout({
 
   return (
     <div className="min-h-screen bg-background flex">
-      <Sidebar role="employee" email={session.user.email!} links={links} />
+      <Sidebar role="employee" userName={session.user.name ?? session.user.email!} links={links} />
       
       <main className="flex-1 lg:pl-64 flex flex-col min-h-screen">
         <div className="flex-1 p-6 lg:p-10 max-w-6xl mx-auto w-full animate-in fade-in duration-500">

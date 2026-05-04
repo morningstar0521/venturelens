@@ -21,8 +21,8 @@
 
 # 📦 Project Global Context
 
-> **Last Updated:** 2026-04-29
-> **Current State:** 🚧 Active Development — Database integrated, Auth flows finalized, UI polished, Role-specific dashboards fully built
+> **Last Updated:** 2026-05-04
+> **Current State:** 🚧 Active Development — Database integrated, Auth flows finalized, UI polished, role-specific dashboards fully built, AI Evaluation, locked-idea reassessment, profile management, and Team Builder modules implemented
 > **Project Type:** Next.js 15 Web Application (VentureLens SaaS)
 
 ---
@@ -139,13 +139,37 @@ minorproject/
 | ✅ | Founder Dashboard | Overview, Submit Idea, My Ideas, Review Applicants |
 | ✅ | Employee Dashboard | Overview, Browse Ideas (with Apply), My Applications, Profile |
 | ✅ | Role-based Routing | `middleware.ts` enforces `/dashboard/founder`, `/dashboard/employee`, `/admin/dashboard` |
-| 🔲 Planned | AI Idea Evaluation | AI-based idea validation and Venture Score calculation |
+| ✅ | AI Idea Evaluation | AI-based idea validation and Venture Score calculation (India-focused multi-model pipeline) |
+| ✅ | AI Team Building | Suggests optimal startup team structure based on Venture Score ≥ 70, gated hiring features |
 
 ---
 
 ## 🏗️ Architecture Decisions
 
 > Log all significant architectural decisions (ADRs) here. Add new ones at the top.
+
+### [2026-05-04] AI Team Building & Hiring Module
+- Implemented `role_requirements` database table to track job openings per idea.
+- Added `/api/ai/team-suggestions` endpoint using a waterfall approach: Gemini (primary) → Groq (fallback) → Rule-based. Prompts are heavily tailored to Indian startup ecosystem realities.
+- Enforced a strict Venture Score gate (≥ 70) for unlocking team-building features.
+- Expanded application statuses to include `"shortlisted"`.
+- Shifted employee browsing logic to present role-specific applications instead of generic idea applications.
+
+### [2026-05-04] Founder Iteration, Profile Management & Branding Polish
+- Locked ideas with Venture Score below 70 can be edited and reassessed at `/dashboard/founder/ideas/[id]/edit`; successful edits trigger a fresh AI report.
+- Profile management is available from the sidebar identity area for founders, employees, and admins; email remains read-only while editable profile fields update across the app.
+- Sidebar identity area displays the user's name instead of email, using email only as a fallback.
+- Replaced placeholder logo marks with `/public/logo/logo.png` plus VentureLens text in sidebar, landing navbar, and footer.
+- Added flash-style success messages for profile saves, role additions/edits, and idea edit/reassess actions.
+
+### [2026-05-04] Founder JWT Session Guard
+- Added `requireFounderSession()` in `lib/auth/guards.ts` as the shared founder-page guard.
+- All `/dashboard/founder` pages now call the shared guard, which uses `auth()` to validate the signed JWT session cookie and enforce `role === "founder"`.
+- Existing founder-owned resource checks remain in nested pages after the JWT role check, so founders can only access their own ideas and team modules.
+
+### [2026-05-04] India-Focused AI Evaluation Engine
+- Refactored `evaluate.ts` to strictly output market analysis for the Indian context (TAM in INR, local competitors, UPI/COD considerations).
+- Fixed floating-point hydration issues in `VentureScoreGauge.tsx` using a consistent rounding utility `r()`.
 
 ### [2026-04-29] Admin Credentials Database Migration
 - Migrated admin authentication from hardcoded environment variables in `auth.ts` to standard DB-backed authentication.
@@ -205,6 +229,24 @@ minorproject/
 ## 📝 Session Log
 
 > Brief log of what was done each session. Newest entries at the top.
+
+### 2026-05-04 — AI Team Building Module & Evaluation Fixes
+- Added `role_requirements` DB table and updated `applications` table via raw SQL (`/api/db/migrate`).
+- Created `/api/ai/team-suggestions` API route for Gemini/Groq team structure generation.
+- Built interactive `TeamBuilder` component for founders to manage AI-suggested roles.
+- Moved Team Builder out of My Ideas into standalone `/dashboard/founder/team` and `/dashboard/founder/team/[id]` pages.
+- Added Team Builder actions for Add Role, Edit Roles, one-role AI Recommendation, Cancel, and Go Back.
+- Rewrote the Employee Browse Ideas page to display role-specific postings and role-specific applications.
+- Updated Founder Applicants page to group applications by role, adding a "Shortlist" capability.
+- Extended `StatusBadge` to support the new `shortlisted` state (violet color scheme).
+- Fixed React controlled/uncontrolled warnings in `SelectInput` and floating-point hydration mismatches in `VentureScoreGauge`.
+- Removed the embedded Team Builder from idea reports; Contributors Unlocked routes to Team Builder until roles exist, then routes to Applicants.
+- Added locked-idea Edit & Reassess flow so ideas scoring below 70 can be improved and evaluated again with a new report.
+- Locked ideas show Edit & Reassess instead of View Applicants.
+- Added profile management pages/actions for founder, employee, and admin, with read-only email, editable details, Save, Cancel, and flash success messages.
+- Sidebar profile link now shows the user's name instead of email and routes to the role-appropriate profile page.
+- Replaced placeholder VentureLens marks with `/public/logo/logo.png` in sidebar, navbar, and footer.
+- Added shared JWT-backed founder page verification via `requireFounderSession()` and applied it across all founder routes.
 
 ### 2026-04-29 — Dashboard Implementation & Bug Fixes
 - Designed and built separate dashboard interfaces for Admin, Founder, and Employee roles.

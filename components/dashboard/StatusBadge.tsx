@@ -33,6 +33,11 @@ const CONFIG: Record<string, { label: string; classes: string; dot?: string; ani
     classes: "bg-success/10 text-success border-success/20",
     dot: "bg-success",
   },
+  shortlisted: {
+    label: "Shortlisted",
+    classes: "bg-violet-500/10 text-violet-300 border-violet-400/20",
+    dot: "bg-violet-400",
+  },
   active: {
     label: "Active",
     classes: "bg-success/10 text-success border-success/20",

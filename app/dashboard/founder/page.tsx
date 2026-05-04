@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { requireFounderSession } from "@/lib/auth/guards"
 import { StatsCard } from "@/components/dashboard/StatsCard"
 import { StatusBadge } from "@/components/dashboard/StatusBadge"
 import { Lightbulb, Users, BarChart3, PlusCircle, Cpu, Zap, Clock } from "lucide-react"
@@ -8,8 +8,8 @@ import Link from "next/link"
 export const metadata = { title: "Dashboard — Founder | VentureLens" }
 
 export default async function FounderDashboardPage() {
-  const session = await auth()
-  const ideas = await getIdeasByFounder(session!.user.id)
+  const session = await requireFounderSession()
+  const ideas = await getIdeasByFounder(session.user.id)
 
   const totalIdeas    = ideas.length
   const evaluatedIdeas = ideas.filter((i) => i.ai_report !== null).length
@@ -34,7 +34,7 @@ export default async function FounderDashboardPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-accent-yellow">
-              Welcome back, {session!.user.name?.split(" ")[0]}! 👋
+              Welcome back, {session.user.name?.split(" ")[0]}! 👋
             </h1>
             <p className="text-accent-muted text-sm mt-0.5">
               {totalIdeas === 0

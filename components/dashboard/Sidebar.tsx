@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Zap, LogOut, Menu, X } from "lucide-react"
+import { LogOut, Menu, X, UserCircle } from "lucide-react"
 import { useState, useTransition } from "react"
 import { signOut } from "next-auth/react"
 import { saveActivePathAction } from "@/actions/nav"
@@ -17,7 +18,7 @@ interface NavLink {
 
 interface SidebarProps {
   role: "admin" | "founder" | "employee"
-  email: string
+  userName: string
   links: NavLink[]
 }
 
@@ -46,12 +47,14 @@ function resolveActive(links: NavLink[], pathname: string): string | null {
   return matches[0].href
 }
 
-export function Sidebar({ role, email, links }: SidebarProps) {
+export function Sidebar({ role, userName, links }: SidebarProps) {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [, startTransition] = useTransition()
 
   const activeHref = resolveActive(links, pathname)
+  const homeHref = role === "admin" ? "/admin/dashboard" : `/dashboard/${role}`
+  const profileHref = role === "admin" ? "/admin/dashboard/profile" : `/dashboard/${role}/profile`
 
   const roleColors = {
     admin:    "text-error border-error/20 bg-error/10",
@@ -94,13 +97,18 @@ export function Sidebar({ role, email, links }: SidebarProps) {
         {/* Logo */}
         <div className="p-6 flex items-center justify-between">
           <Link
-            href={role === "admin" ? "/admin/dashboard" : `/dashboard/${role}`}
-            onClick={() => handleNavClick(role === "admin" ? "/admin/dashboard" : `/dashboard/${role}`)}
+            href={homeHref}
+            onClick={() => handleNavClick(homeHref)}
             className="flex items-center gap-3"
           >
-            <div className="w-8 h-8 rounded-xl bg-btn flex items-center justify-center shrink-0">
-              <Zap className="w-4 h-4 text-btn-text fill-btn-text" />
-            </div>
+            <Image
+              src="/logo/logo.png"
+              alt="VentureLens"
+              width={36}
+              height={40}
+              priority
+              className="h-9 w-auto object-contain"
+            />
             <span className="font-bold text-lg">
               <span className="text-btn">Venture</span><span className="text-accent-yellow">Lens</span>
             </span>
@@ -155,7 +163,14 @@ export function Sidebar({ role, email, links }: SidebarProps) {
         {/* Footer */}
         <div className="p-4 border-t border-white/5">
           <div className="px-4 py-3">
-            <p className="text-xs text-accent-muted truncate mb-3">{email}</p>
+            <Link
+              href={profileHref}
+              onClick={() => handleNavClick(profileHref)}
+              className="flex items-center gap-2 text-xs text-accent-muted hover:text-accent-yellow transition-colors truncate mb-3"
+            >
+              <UserCircle className="w-4 h-4 shrink-0" />
+              <span className="truncate">{userName}</span>
+            </Link>
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
               className="flex items-center gap-2 text-sm text-error/70 hover:text-error transition-colors w-full"

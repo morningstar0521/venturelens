@@ -1,7 +1,7 @@
 "use server"
 
 import { auth } from "@/auth"
-import { applyToIdea, updateApplicationStatus, updateApplicationRole, ApplicationStatus, AssignedRole } from "@/lib/db/applications"
+import { applyToIdea, applyToRole, updateApplicationStatus, updateApplicationRole, shortlistApplication, ApplicationStatus, AssignedRole } from "@/lib/db/applications"
 import { ApplicationSchema } from "@/lib/validations"
 import { revalidatePath } from "next/cache"
 
@@ -56,5 +56,35 @@ export async function assignRoleAction(applicationId: string, role: AssignedRole
     revalidatePath("/dashboard/founder/applicants")
   } catch {
     return { error: "Failed to assign role" }
+  }
+}
+
+export async function applyToRoleAction(ideaId: string, roleRequirementId: string, formData: FormData) {
+  const session = await auth()
+  if (!session?.user || session.user.role !== "employee") {
+    throw new Error("Unauthorized")
+  }
+
+  const message = (formData.get("message") as string) ?? ""
+  try {
+    await applyToRole({ ideaId, roleRequirementId, employeeId: session.user.id, message })
+    revalidatePath("/dashboard/employee/applications")
+    revalidatePath("/dashboard/founder/applicants")
+  } catch {
+    return { error: "Failed to apply. You may have already applied to this idea." }
+  }
+}
+
+export async function shortlistApplicationAction(id: string) {
+  const session = await auth()
+  if (!session?.user || session.user.role !== "founder") {
+    throw new Error("Unauthorized")
+  }
+  try {
+    await shortlistApplication(id)
+    revalidatePath("/dashboard/founder/applicants")
+    revalidatePath("/dashboard/employee/applications")
+  } catch {
+    return { error: "Failed to shortlist" }
   }
 }

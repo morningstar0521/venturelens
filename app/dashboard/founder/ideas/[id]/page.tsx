@@ -1,10 +1,11 @@
-import { auth } from "@/auth"
+import { requireFounderSession } from "@/lib/auth/guards"
 import { getIdeaById } from "@/lib/db/ideas"
+import { getRolesByIdea } from "@/lib/db/roles"
 import { EvaluationReportView } from "@/components/dashboard/EvaluationReport"
 import { StatusBadge } from "@/components/dashboard/StatusBadge"
-import { notFound, redirect } from "next/navigation"
+import { notFound } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Cpu } from "lucide-react"
+import { ArrowLeft, Cpu, Pencil, RefreshCw } from "lucide-react"
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -14,11 +15,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function IdeaReportPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const session = await auth()
-  if (!session?.user) redirect("/login")
+  const session = await requireFounderSession()
 
   const idea = await getIdeaById(id)
   if (!idea || idea.founder_id !== session.user.id) notFound()
+  const existingRoles = await getRolesByIdea(id).catch(() => [])
+  const isLocked = idea.ai_report && (idea.venture_score ?? 0) < 70
 
   return (
     <div className="space-y-6">
@@ -44,6 +46,23 @@ export default async function IdeaReportPage({ params }: { params: Promise<{ id:
           </p>
         </div>
       </div>
+
+      {isLocked && idea.status !== "evaluating" && (
+        <div className="glass-panel rounded-2xl p-5 border border-btn/20 bg-btn/5 flex items-center justify-between gap-4">
+          <div>
+            <h2 className="font-bold text-accent-yellow text-sm">Improve and reassess this idea</h2>
+            <p className="text-xs text-white/45 mt-1">Edit the idea details and generate a fresh Venture Score report.</p>
+          </div>
+          <Link
+            href={`/dashboard/founder/ideas/${id}/edit`}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-btn text-btn-foreground text-sm font-bold hover:bg-btn/90 transition-colors shrink-0"
+          >
+            <Pencil className="w-4 h-4" />
+            Edit & Reassess
+            <RefreshCw className="w-4 h-4" />
+          </Link>
+        </div>
+      )}
 
       {/* Report or pending state */}
       {idea.status === "evaluating" ? (
@@ -71,7 +90,11 @@ export default async function IdeaReportPage({ params }: { params: Promise<{ id:
           </Link>
         </div>
       ) : idea.ai_report ? (
-        <EvaluationReportView report={idea.ai_report} />
+        <EvaluationReportView
+          report={idea.ai_report}
+          ideaId={id}
+          hasPostedRoles={existingRoles.length > 0}
+        />
       ) : (
         <div className="glass-panel rounded-3xl p-12 border border-white/5 text-center">
           <p className="text-white/50 mb-4">No AI evaluation report available for this idea yet.</p>

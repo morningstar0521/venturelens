@@ -3,12 +3,9 @@
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Menu, X, Zap } from "lucide-react"
+import { Menu, X } from "lucide-react"
 
 // ─── Navbar ────────────────────────────────────────────────────────────────
-// Set to true once logo.png is in /public/logo/
-const USE_IMAGE_LOGO = true
-
 export function Navbar() {
   const [open, setOpen] = useState(false)
 
@@ -18,28 +15,12 @@ export function Navbar() {
     { href: "#testimonials", label: "Testimonials"  },
   ]
 
-  // ── Fallback icon logo (always the same on server + client) ──────────────
-  const iconLogo = (
-    <div className="flex items-center gap-2.5">
-      <div className="w-8 h-8 rounded-xl bg-btn flex items-center justify-center shadow-[0_0_12px_rgba(248,198,34,0.4)]">
-        <Zap className="w-4 h-4 text-btn-text fill-btn-text" />
-      </div>
-      <span className="font-bold text-lg tracking-tight">
-        <span className="text-btn">Venture</span>
-        <span className="text-accent-yellow">Lens</span>
-      </span>
-    </div>
-  )
-
-  // ── Image logo: suppress hydration mismatch with suppressHydrationWarning ─
-  // The <Image> component renders differently between server (no-script img)
-  // and client (optimised img), so we suppress the warning at the container level.
-  const imageLogo = (
+  const logoContent = (
     <div className="flex items-center gap-2.5" suppressHydrationWarning>
       <Image
         src="/logo/logo.png"
         alt="VentureLens"
-        width={140}
+        width={36}
         height={36}
         priority
         className="h-9 w-auto object-contain"
@@ -51,8 +32,6 @@ export function Navbar() {
       </span>
     </div>
   )
-
-  const logoContent = USE_IMAGE_LOGO ? imageLogo : iconLogo
 
   return (
     <nav className="fixed top-0 inset-x-0 z-50 border-b border-white/5 bg-background/80 backdrop-blur-xl">

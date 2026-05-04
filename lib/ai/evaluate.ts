@@ -80,7 +80,7 @@ async function analyzeMarketWithGemini(idea: IdeaContext): Promise<MarketPotenti
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
-    const prompt = `You are a startup market analyst. Analyze the market potential of the following startup idea and respond ONLY with valid JSON.
+    const prompt = `You are an Indian startup market analyst with deep knowledge of the Indian economy. Analyze the market potential of the following startup idea STRICTLY for the Indian market. Use India-specific data, real Indian consumer behavior, and India-centric growth trends. Do NOT provide global or generic answers.
 
 Startup: "${idea.title}"
 Problem: "${idea.problemStatement || idea.description}"
@@ -89,12 +89,20 @@ Target Audience: "${idea.targetAudience || ""}"
 Industry: "${idea.industry || "General"}"
 Stage: "${idea.stage}"
 
+IMPORTANT: Consider Indian-specific factors:
+- Indian consumer price sensitivity and tier 2/3 city adoption
+- TAM/SAM in INR (Indian Rupees) for the Indian market only
+- UPI, wallets, COD payment behaviour
+- Government schemes: Startup India, Digital India, GST, PLI
+- Rural vs urban internet penetration and infrastructure
+- Language diversity and regional trust barriers
+
 Respond with this exact JSON structure (no markdown, no explanation):
 {
-  "tam": "string describing Total Addressable Market size estimate",
+  "tam": "India-specific TAM estimate in INR or USD with Indian market context",
   "demandLevel": "Low|Medium|High|Very High",
-  "growthTrends": "1-2 sentences on market growth trends",
-  "customerNeedLevel": "1 sentence on urgency of customer need",
+  "growthTrends": "1-2 sentences on Indian market growth trends with local data points",
+  "customerNeedLevel": "1 sentence on urgency of customer need specifically in India",
   "score": number between 0 and 100
 }`
 
@@ -122,7 +130,7 @@ async function analyzeCompetitionWithGroq(idea: IdeaContext): Promise<{
   try {
     const groq = new Groq({ apiKey })
 
-    const prompt = `You are a startup investment analyst. Analyze competition, risks, feasibility, and improvements for this startup idea. Respond ONLY with valid JSON.
+    const prompt = `You are an Indian startup investment analyst with expertise in the Indian ecosystem. Analyze competition, risks, feasibility, and improvements for this startup idea STRICTLY within the Indian market context. Do NOT suggest global companies as primary competitors — focus on Indian startups and local players.
 
 Startup: "${idea.title}"
 Problem: "${idea.problemStatement || idea.description}"
@@ -130,26 +138,34 @@ Solution: "${idea.solution || ""}"
 Revenue Model: "${idea.revenueModel || ""}"
 Industry: "${idea.industry || "General"}"
 
+IMPORTANT — India-specific context to factor in:
+- Identify Indian competitors (Indian startups, local incumbents, Bharat-focused apps)
+- Risk from Indian regulations: RBI guidelines (if fintech), TRAI, IT Act, GST compliance
+- Funding risks: Indian VC landscape, angel networks (Mumbai/Bangalore/Delhi), government grants
+- Market risk: tier 2/3 city penetration, vernacular user adoption, seasonal demand patterns
+- Feasibility in Indian infrastructure context: logistics (Delhivery, Shiprocket), payments (UPI/Razorpay), cloud (AWS Mumbai region)
+- Suggestions must be practical for bootstrapped Indian founders
+
 Respond with this exact JSON (no markdown):
 {
   "competition": {
-    "directCompetitors": ["max 4 real company names"],
-    "indirectCompetitors": ["max 3 real company names"],
-    "differentiationGaps": ["max 3 specific gaps this startup can exploit"],
-    "score": number 0-100 representing competitive advantage
+    "directCompetitors": ["max 4 Indian company or startup names"],
+    "indirectCompetitors": ["max 3 Indian company or adjacent solution names"],
+    "differentiationGaps": ["max 3 specific gaps this startup can exploit in the Indian market"],
+    "score": number 0-100 representing competitive advantage in India
   },
   "risks": {
-    "execution": { "level": "Low|Medium|High", "detail": "one sentence" },
-    "funding": { "level": "Low|Medium|High", "detail": "one sentence" },
-    "market": { "level": "Low|Medium|High", "detail": "one sentence" },
-    "legal": { "level": "Low|Medium|High", "detail": "one sentence" },
-    "score": number 0-100 where 100 means very low risk
+    "execution": { "level": "Low|Medium|High", "detail": "one sentence specific to Indian execution challenges" },
+    "funding": { "level": "Low|Medium|High", "detail": "one sentence on Indian funding landscape risk" },
+    "market": { "level": "Low|Medium|High", "detail": "one sentence on Indian market adoption risk" },
+    "legal": { "level": "Low|Medium|High", "detail": "one sentence on Indian regulatory/legal risk" },
+    "score": number 0-100 where 100 means very low risk in Indian context
   },
   "feasibility": {
-    "analysis": "2-3 sentences on technical and operational feasibility",
+    "analysis": "2-3 sentences on feasibility given Indian infrastructure, talent pool, and cost structures",
     "score": number 0-100
   },
-  "suggestions": ["max 5 specific actionable improvement suggestions"]
+  "suggestions": ["max 5 actionable suggestions tailored for Indian market entry and growth"]
 }`
 
     const completion = await groq.chat.completions.create({
@@ -184,38 +200,63 @@ function ruleBased(idea: IdeaContext): EvaluationReport {
 
   const report: Omit<EvaluationReport, "ventureScore" | "modelUsed"> = {
     marketPotential: {
-      tam: "Estimated $1B–$10B based on industry benchmarks",
+      tam: "Estimated ₹500 Cr–₹5,000 Cr Indian addressable market based on industry benchmarks",
       demandLevel: marketScore > 70 ? "High" : marketScore > 50 ? "Medium" : "Low",
-      growthTrends: "Market analysis based on idea depth and completeness. Add more details for a refined estimate.",
-      customerNeedLevel: hasAudience ? "Well-defined customer segment identified." : "Customer need could be more precisely defined.",
+      growthTrends: "India's digital economy is growing at 15–20% YoY driven by tier 2/3 city expansion and UPI adoption. Add more idea details for a refined India-specific estimate.",
+      customerNeedLevel: hasAudience
+        ? "A customer segment is identified — validate demand in tier 2/3 Indian cities for maximum reach."
+        : "Customer need should be validated for Indian price sensitivity and regional language preferences.",
       score: marketScore,
     },
     competition: {
-      directCompetitors: ["Established players in the industry"],
-      indirectCompetitors: ["Adjacent market solutions"],
+      directCompetitors: ["Indian incumbents in the sector", "Bharat-focused startups"],
+      indirectCompetitors: ["Jugaad / informal alternatives", "WhatsApp-based local solutions"],
       differentiationGaps: [
-        hasSolution ? "Clear solution differentiation identified" : "Solution differentiation needs refinement",
-        hasRevenue ? "Revenue model defined" : "Revenue model needs more clarity",
+        hasSolution ? "Solution differentiation identified — localise for regional Indian markets" : "Define differentiation vs Indian competitors",
+        hasRevenue ? "Revenue model defined — consider UPI/COD for Indian payment preferences" : "Add a revenue model suitable for Indian price points (freemium, subscription ₹99–₹499)",
+        "Vernacular language support could unlock tier 2/3 city adoption",
       ],
       score: competitionScore,
     },
     risks: {
-      execution: { level: idea.stage === "idea" ? "High" : "Medium", detail: "Execution risk depends on team capability and MVP timeline." },
-      funding: { level: "Medium", detail: "Funding risk is moderate; a clear revenue model helps investor confidence." },
-      market: { level: marketScore > 65 ? "Low" : "Medium", detail: "Market risk varies with demand and competition." },
-      legal: { level: "Low", detail: "No obvious regulatory red flags identified from the idea description." },
+      execution: {
+        level: idea.stage === "idea" ? "High" : "Medium",
+        detail: idea.stage === "idea"
+          ? "Early-stage execution risk is high in India — build a lean MVP and test with a pilot city first."
+          : "Execution risk is moderate; leverage India's deep engineering talent pool at competitive salaries.",
+      },
+      funding: {
+        level: "Medium",
+        detail: "Indian angel networks (Mumbai/Bangalore/Delhi) and govt schemes (Startup India seed fund) can bridge early rounds.",
+      },
+      market: {
+        level: marketScore > 65 ? "Low" : "Medium",
+        detail: marketScore > 65
+          ? "Healthy Indian market demand — focus on Bharat (tier 2/3) for faster growth at lower CAC."
+          : "Adoption risk is moderate; India's price-sensitive users require a compelling free or freemium entry.",
+      },
+      legal: {
+        level: "Low",
+        detail: "Ensure GST registration, IT Act compliance, and sector-specific licenses (RBI for fintech, FSSAI for food).",
+      },
       score: riskScore,
     },
     feasibility: {
-      analysis: `This idea shows ${feasibilityScore > 70 ? "strong" : "moderate"} feasibility. ${hasSolution ? "A clear solution is defined." : "The solution needs more detail."} ${hasRevenue ? "Revenue model is present." : "A revenue model should be added."}`,
+      analysis: `This idea shows ${feasibilityScore > 70 ? "strong" : "moderate"} feasibility for the Indian market. ${hasSolution ? "A clear solution is defined — prioritise lightweight delivery suited to Indian mobile-first users." : "The solution needs more detail; focus on low-bandwidth and offline-capable features for rural India."} ${hasRevenue ? "A revenue model is present — validate pricing against Indian willingness-to-pay benchmarks." : "Add a revenue model; micro-subscription (₹99–₹299/month) or transaction fee models work well in India."}`,
       score: feasibilityScore,
     },
     suggestions: [
-      !hasSolution ? "Define your solution in more detail — what exactly will you build?" : "Refine your solution's unique value proposition.",
-      !hasRevenue ? "Add a clear revenue model (SaaS, marketplace fees, advertising, etc.)" : "Validate revenue assumptions with potential customers.",
-      !hasAudience ? "Define your target audience more precisely (demographics, pain points, size)" : "Conduct user interviews with your target audience.",
-      "Identify your top 3 direct competitors and articulate why you win.",
-      "Define your first 90-day roadmap to reach your first paying customer.",
+      !hasSolution
+        ? "Define your core solution for an Indian user — keep it mobile-first and low-data-usage friendly."
+        : "Localise your solution for regional Indian languages to unlock tier 2/3 city markets.",
+      !hasRevenue
+        ? "Add a revenue model: consider ₹99–₹499/month SaaS, transaction fees via UPI, or freemium with premium upgrades."
+        : "Validate your pricing against Indian consumer willingness-to-pay; run A/B tests in 2–3 cities.",
+      !hasAudience
+        ? "Define your Indian target audience — segment by city tier, age group, and income bracket (SEC A/B/C)."
+        : "Map your audience to Indian digital behaviour — WhatsApp reach, YouTube discovery, Indic language preference.",
+      "Identify 3–5 Indian competitors (startups + incumbents) and articulate your differentiation for Bharat users.",
+      "Design a 90-day pilot: launch in 1 city, acquire first 100 paying customers, then expand using referral/word-of-mouth.",
     ].filter(Boolean).slice(0, 5),
   }
 

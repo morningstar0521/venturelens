@@ -120,6 +120,35 @@ export async function updateIdeaReport(
   `
 }
 
+export async function updateIdeaForReassessment(
+  id: string,
+  data: {
+    title: string
+    description: string
+    problemStatement?: string
+    solution?: string
+    targetAudience?: string
+    revenueModel?: string
+    industry?: string
+    stage: IdeaStage
+  }
+): Promise<void> {
+  await sql`
+    UPDATE ideas
+    SET
+      title = ${data.title},
+      description = ${data.description},
+      problem_statement = ${data.problemStatement ?? null},
+      solution = ${data.solution ?? null},
+      target_audience = ${data.targetAudience ?? null},
+      revenue_model = ${data.revenueModel ?? null},
+      industry = ${data.industry ?? null},
+      stage = ${data.stage},
+      status = 'evaluating'
+    WHERE id = ${id}
+  `
+}
+
 export async function getPublicIdeas(): Promise<DbIdea[]> {
   const rows = await sql`
     SELECT * FROM ideas WHERE status = 'approved' ORDER BY created_at DESC

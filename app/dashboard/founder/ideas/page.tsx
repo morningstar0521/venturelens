@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { requireFounderSession } from "@/lib/auth/guards"
 import { getIdeasByFounder } from "@/lib/db/ideas"
 import { IdeaCard } from "@/components/dashboard/IdeaCard"
 import Link from "next/link"
@@ -7,8 +7,8 @@ import { PlusCircle, Zap } from "lucide-react"
 export const metadata = { title: "My Ideas — VentureLens" }
 
 export default async function FounderIdeasPage() {
-  const session = await auth()
-  const ideas = await getIdeasByFounder(session!.user.id)
+  const session = await requireFounderSession()
+  const ideas = await getIdeasByFounder(session.user.id)
 
   return (
     <div className="space-y-6">
@@ -48,29 +48,41 @@ export default async function FounderIdeasPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {ideas.map((idea) => (
-            <IdeaCard
-              key={idea.id}
-              idea={idea}
-              actions={
-                <div className="flex items-center justify-between text-sm">
-                  <Link
-                    href={`/dashboard/founder/applicants?idea=${idea.id}`}
-                    className="text-accent-muted hover:text-white transition-colors text-xs"
-                  >
-                    View Applicants →
-                  </Link>
-                  <Link
-                    href={`/dashboard/founder/ideas/${idea.id}`}
-                    className="flex items-center gap-1.5 bg-btn/10 hover:bg-btn/20 border border-btn/20 text-btn px-3 py-1.5 rounded-lg font-semibold text-xs transition-colors"
-                  >
-                    <Zap className="w-3 h-3" />
-                    {idea.ai_report ? "View AI Report" : idea.status === "evaluating" ? "Evaluating…" : "View Details"}
-                  </Link>
-                </div>
-              }
-            />
-          ))}
+          {ideas.map((idea) => {
+            const isUnlocked = (idea.venture_score ?? 0) >= 70
+            return (
+              <IdeaCard
+                key={idea.id}
+                idea={idea}
+                actions={
+                  <div className="flex items-center justify-between text-sm">
+                    {isUnlocked ? (
+                      <Link
+                        href={`/dashboard/founder/applicants?idea=${idea.id}`}
+                        className="text-accent-muted hover:text-white transition-colors text-xs"
+                      >
+                        View Applicants →
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/dashboard/founder/ideas/${idea.id}/edit`}
+                        className="text-btn hover:text-btn/80 transition-colors text-xs"
+                      >
+                        Edit & Reassess →
+                      </Link>
+                    )}
+                    <Link
+                      href={`/dashboard/founder/ideas/${idea.id}`}
+                      className="flex items-center gap-1.5 bg-btn/10 hover:bg-btn/20 border border-btn/20 text-btn px-3 py-1.5 rounded-lg font-semibold text-xs transition-colors"
+                    >
+                      <Zap className="w-3 h-3" />
+                      {idea.ai_report ? "View AI Report" : idea.status === "evaluating" ? "Evaluating…" : "View Details"}
+                    </Link>
+                  </div>
+                }
+              />
+            )
+          })}
         </div>
       )}
     </div>

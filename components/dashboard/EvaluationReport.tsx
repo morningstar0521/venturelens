@@ -13,6 +13,8 @@ import Link from "next/link"
 
 interface EvaluationReportProps {
   report: EvaluationReport
+  ideaId?: string
+  hasPostedRoles?: boolean
 }
 
 function RiskLevel({ level }: { level: "Low" | "Medium" | "High" }) {
@@ -49,8 +51,12 @@ function SectionCard({ icon: Icon, title, children, className = "" }: {
   )
 }
 
-export function EvaluationReportView({ report }: EvaluationReportProps) {
+export function EvaluationReportView({ report, ideaId, hasPostedRoles = false }: EvaluationReportProps) {
   const isUnlocked = report.ventureScore >= 70
+  const contributorHref = hasPostedRoles || !ideaId
+    ? "/dashboard/founder/applicants"
+    : `/dashboard/founder/team/${ideaId}`
+  const contributorCta = hasPostedRoles ? "View & Manage Applicants" : "Build Team"
   const { marketPotential: mp, competition: comp, risks, feasibility, suggestions } = report
 
   return (
@@ -219,11 +225,11 @@ export function EvaluationReportView({ report }: EvaluationReportProps) {
             </div>
           </div>
           <Link
-            href="/dashboard/founder/applicants"
+            href={contributorHref}
             className="inline-flex items-center gap-2 bg-success/10 hover:bg-success/20 border border-success/20 text-success px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200"
           >
             <Users className="w-4 h-4" />
-            View &amp; Manage Applicants
+            {contributorCta}
             <ChevronRight className="w-4 h-4" />
           </Link>
         </div>

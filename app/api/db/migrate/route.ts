@@ -3,6 +3,7 @@
 // Safe to run multiple times.
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
+import { initRolesDb } from "@/lib/db/roles"
 
 export async function GET() {
   try {
@@ -16,6 +17,9 @@ export async function GET() {
 
     // ── applications: role assignment for team formation ─────────────────────
     await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS assigned_role VARCHAR(50)`
+
+    // ── role_requirements + applications.role_requirement_id ─────────────────
+    await initRolesDb()
 
     // ── ideas: allow 'evaluating' status by dropping the old constraint if any
     // (there is no CHECK constraint on status — so nothing to change here)
