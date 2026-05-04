@@ -31,7 +31,7 @@ export default async function FounderIdeasPage() {
       </div>
 
       {ideas.length === 0 ? (
-        <div className="glass-panel rounded-2xl p-12 text-center border border-white/5 flex flex-col items-center gap-4">
+      <div className="glass-panel rounded-2xl p-12 text-center border border-white/5 flex flex-col items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-btn/10 border border-btn/20 flex items-center justify-center">
             <Zap className="w-8 h-8 text-btn" />
           </div>

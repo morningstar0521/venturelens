@@ -1,7 +1,7 @@
 "use server"
 
 import { auth } from "@/auth"
-import { applyToIdea, applyToRole, updateApplicationStatus, updateApplicationRole, shortlistApplication, ApplicationStatus, AssignedRole } from "@/lib/db/applications"
+import { applyToIdea, applyToRole, updateApplicationStatus, updateApplicationRole, shortlistApplication, deleteApplication, ApplicationStatus, AssignedRole } from "@/lib/db/applications"
 import { ApplicationSchema } from "@/lib/validations"
 import { revalidatePath } from "next/cache"
 
@@ -87,4 +87,18 @@ export async function shortlistApplicationAction(id: string) {
   } catch {
     return { error: "Failed to shortlist" }
   }
+}
+
+export async function cancelApplicationAction(applicationId: string) {
+  const session = await auth()
+  if (!session?.user || session.user.role !== "employee") {
+    throw new Error("Unauthorized")
+  }
+
+  const deleted = await deleteApplication(applicationId, session.user.id)
+  if (!deleted) {
+    return { error: "Could not cancel — application may already be reviewed." }
+  }
+
+  revalidatePath("/dashboard/employee/applications")
 }

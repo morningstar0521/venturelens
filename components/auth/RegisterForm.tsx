@@ -40,9 +40,9 @@ export function RegisterForm() {
 
     const parsed = RegisterSchema.safeParse(formData)
     if (!parsed.success) {
-      const formattedErrors: any = {}
+      const formattedErrors: Record<string, string> = {}
       parsed.error.issues.forEach((issue) => {
-        formattedErrors[issue.path[0]] = issue.message
+        formattedErrors[String(issue.path[0])] = issue.message
       })
       setErrors(formattedErrors)
       return

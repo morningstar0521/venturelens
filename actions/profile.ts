@@ -2,53 +2,56 @@
 
 import { auth } from "@/auth"
 import { updateUserProfile } from "@/lib/db/users"
+import { UpdateProfileSchema } from "@/lib/validations"
 import { revalidatePath } from "next/cache"
-import { z } from "zod"
 
-const ProfileSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters").max(100),
-  startupName: z.string().max(200).optional(),
-  skills: z.array(z.string().min(1)).max(20),
-  experience: z.string().max(50).optional(),
-})
+export type ProfileActionState = {
+  success: boolean
+  message: string
+  errors?: Record<string, string[]>
+}
 
-export async function updateProfileAction(formData: FormData) {
+export async function updateProfileAction(
+  _prev: ProfileActionState,
+  formData: FormData
+): Promise<ProfileActionState> {
   const session = await auth()
-  if (!session?.user) throw new Error("Unauthorized")
+  if (!session?.user?.id) {
+    return { success: false, message: "Unauthorized" }
+  }
 
-  const skills = String(formData.get("skills") ?? "")
+  // Parse skills from comma-separated string
+  const rawSkills = (formData.get("skills") as string | null) ?? ""
+  const skills = rawSkills
     .split(",")
-    .map(skill => skill.trim())
+    .map((s) => s.trim())
     .filter(Boolean)
 
-  const parsed = ProfileSchema.safeParse({
+  const raw = {
     name: formData.get("name"),
-    startupName: String(formData.get("startupName") ?? ""),
     skills,
-    experience: String(formData.get("experience") ?? ""),
-  })
+    experience: formData.get("experience"),
+  }
 
+  const parsed = UpdateProfileSchema.safeParse(raw)
   if (!parsed.success) {
-    return { error: parsed.error.issues[0].message }
+    return {
+      success: false,
+      message: "Please fix the errors below.",
+      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+    }
   }
 
   try {
     await updateUserProfile(session.user.id, {
       name: parsed.data.name,
-      startupName: session.user.role === "founder" ? parsed.data.startupName || null : null,
-      skills: session.user.role === "employee" ? parsed.data.skills : null,
-      experience: session.user.role === "employee" ? parsed.data.experience || null : null,
+      skills: parsed.data.skills,
+      experience: parsed.data.experience,
     })
+    revalidatePath("/dashboard/employee/profile")
+    revalidatePath("/dashboard/employee")
+    return { success: true, message: "Profile updated successfully!" }
   } catch {
-    return { error: "Failed to update profile. Please try again." }
+    return { success: false, message: "Something went wrong. Please try again." }
   }
-
-  revalidatePath("/dashboard/founder/profile")
-  revalidatePath("/dashboard/employee/profile")
-  revalidatePath("/admin/dashboard/profile")
-  revalidatePath("/dashboard/founder")
-  revalidatePath("/dashboard/employee")
-  revalidatePath("/admin/dashboard")
-
-  return { success: true }
 }

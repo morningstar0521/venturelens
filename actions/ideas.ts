@@ -102,6 +102,9 @@ export async function reassessIdeaAction(ideaId: string, formData: FormData) {
       industry:         parsed.data.industry,
       stage:            parsed.data.stage as IdeaStage,
     })
+
+    revalidatePath("/dashboard/founder/ideas")
+    revalidatePath("/admin/dashboard/ideas")
   } catch {
     return { error: "Failed to update idea. Please try again." }
   }

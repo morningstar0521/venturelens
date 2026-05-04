@@ -23,9 +23,9 @@ export function LoginForm() {
 
     const parsed = LoginSchema.safeParse(formData)
     if (!parsed.success) {
-      const formattedErrors: any = {}
+      const formattedErrors: Record<string, string> = {}
       parsed.error.issues.forEach((issue) => {
-        formattedErrors[issue.path[0]] = issue.message
+        formattedErrors[String(issue.path[0])] = issue.message
       })
       setErrors(formattedErrors)
       return
@@ -84,7 +84,7 @@ export function LoginForm() {
         </button>
 
         <p className="text-center text-accent-muted text-sm pt-2">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/register" className="text-btn hover:underline font-semibold transition-colors">
             Sign up
           </Link>

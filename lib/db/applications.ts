@@ -105,3 +105,14 @@ export async function getApplicationsByRole(roleRequirementId: string): Promise<
   `
   return rows as DbApplication[]
 }
+
+export async function deleteApplication(id: string, employeeId: string): Promise<boolean> {
+  const rows = await sql`
+    DELETE FROM applications
+    WHERE id = ${id}
+      AND employee_id = ${employeeId}
+      AND status = 'pending'
+    RETURNING id
+  `
+  return rows.length > 0
+}
