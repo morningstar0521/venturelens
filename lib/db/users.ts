@@ -88,10 +88,16 @@ export async function updateUserStatus(id: string, isActive: boolean): Promise<v
   `
 }
 
-export async function updateUserProfile(id: string, data: { skills?: string[], experience?: string }): Promise<void> {
+export async function updateUserProfile(
+  id: string,
+  data: { name?: string; skills?: string[]; experience?: string }
+): Promise<void> {
   await sql`
     UPDATE users 
-    SET skills = ${data.skills ?? null}, experience = ${data.experience ?? null}
+    SET 
+      name       = COALESCE(${data.name ?? null}, name),
+      skills     = ${data.skills ?? null},
+      experience = ${data.experience ?? null}
     WHERE id = ${id}
   `
 }

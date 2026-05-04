@@ -13,7 +13,7 @@ export async function toggleUserStatusAction(userId: string, isActive: boolean) 
   try {
     await updateUserStatus(userId, isActive)
     revalidatePath("/admin/dashboard/users")
-  } catch (error) {
+  } catch (_error) {
     return { error: "Failed to update user status" }
   }
 }

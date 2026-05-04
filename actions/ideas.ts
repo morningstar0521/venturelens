@@ -35,7 +35,7 @@ export async function submitIdeaAction(formData: FormData) {
     
     revalidatePath("/dashboard/founder/ideas")
     revalidatePath("/admin/dashboard/ideas")
-  } catch (error) {
+  } catch (_error) {
     return { error: "Failed to submit idea" }
   }
 
@@ -52,7 +52,7 @@ export async function updateIdeaStatusAction(ideaId: string, status: IdeaStatus)
     await updateIdeaStatus(ideaId, status)
     revalidatePath("/admin/dashboard/ideas")
     revalidatePath("/dashboard/employee/browse")
-  } catch (error) {
+  } catch (_error) {
     return { error: "Failed to update status" }
   }
 }

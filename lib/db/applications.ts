@@ -57,3 +57,14 @@ export async function updateApplicationStatus(id: string, status: ApplicationSta
     UPDATE applications SET status = ${status} WHERE id = ${id}
   `
 }
+
+export async function deleteApplication(id: string, employeeId: string): Promise<boolean> {
+  const rows = await sql`
+    DELETE FROM applications
+    WHERE id = ${id}
+      AND employee_id = ${employeeId}
+      AND status = 'pending'
+    RETURNING id
+  `
+  return rows.length > 0
+}

@@ -1,7 +1,7 @@
 "use server"
 
 import { auth } from "@/auth"
-import { applyToIdea, updateApplicationStatus, ApplicationStatus } from "@/lib/db/applications"
+import { applyToIdea, updateApplicationStatus, deleteApplication, ApplicationStatus } from "@/lib/db/applications"
 import { ApplicationSchema } from "@/lib/validations"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
@@ -51,7 +51,21 @@ export async function updateApplicationStatusAction(applicationId: string, statu
     await updateApplicationStatus(applicationId, status)
     revalidatePath("/dashboard/founder/applicants")
     revalidatePath("/dashboard/employee/applications")
-  } catch (error) {
+  } catch (_error) {
     return { error: "Failed to update status" }
   }
+}
+
+export async function cancelApplicationAction(applicationId: string) {
+  const session = await auth()
+  if (!session?.user || session.user.role !== "employee") {
+    throw new Error("Unauthorized")
+  }
+
+  const deleted = await deleteApplication(applicationId, session.user.id)
+  if (!deleted) {
+    return { error: "Could not cancel — application may already be reviewed." }
+  }
+
+  revalidatePath("/dashboard/employee/applications")
 }

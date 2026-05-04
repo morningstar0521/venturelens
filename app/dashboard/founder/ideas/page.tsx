@@ -25,7 +25,7 @@ export default async function FounderIdeasPage() {
 
       {ideas.length === 0 ? (
         <div className="glass-panel rounded-2xl p-10 text-center border border-white/5 flex flex-col items-center gap-4">
-          <p className="text-accent-muted">You haven't submitted any ideas yet.</p>
+          <p className="text-accent-muted">You have not submitted any ideas yet.</p>
           <Link href="/dashboard/founder/ideas/new" className="bg-btn/10 text-btn border border-btn/20 px-6 py-2 rounded-xl font-semibold hover:bg-btn/20 transition-colors">
             Submit your first idea
           </Link>
