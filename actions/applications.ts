@@ -11,22 +11,26 @@ export async function applyToIdeaAction(ideaId: string, formData: FormData) {
     throw new Error("Unauthorized")
   }
 
-  const data = { message: formData.get("message") as string }
-  const parsed = ApplicationSchema.safeParse(data)
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message }
-  }
+  const message = formData.get("message") as string
+  const resumeUrl = formData.get("resumeUrl") as string
+  const questionnaireAnswersRaw = formData.get("questionnaireAnswers") as string
+  let questionnaireAnswers = {}
+  try {
+    questionnaireAnswers = questionnaireAnswersRaw ? JSON.parse(questionnaireAnswersRaw) : {}
+  } catch (e) {}
 
   try {
     await applyToIdea({
       ideaId,
       employeeId: session.user.id,
-      message:    parsed.data.message,
+      message,
+      resumeUrl,
+      questionnaireAnswers,
     })
     revalidatePath("/dashboard/employee/applications")
     revalidatePath("/dashboard/founder/applicants")
   } catch {
-    return { error: "Failed to apply. You may have already applied to this idea." }
+    return { error: "Failed to apply. You may have already sent a general application for this idea." }
   }
 }
 
@@ -66,12 +70,26 @@ export async function applyToRoleAction(ideaId: string, roleRequirementId: strin
   }
 
   const message = (formData.get("message") as string) ?? ""
+  const resumeUrl = formData.get("resumeUrl") as string
+  const questionnaireAnswersRaw = formData.get("questionnaireAnswers") as string
+  let questionnaireAnswers = {}
   try {
-    await applyToRole({ ideaId, roleRequirementId, employeeId: session.user.id, message })
+    questionnaireAnswers = questionnaireAnswersRaw ? JSON.parse(questionnaireAnswersRaw) : {}
+  } catch (e) {}
+
+  try {
+    await applyToRole({ 
+      ideaId, 
+      roleRequirementId, 
+      employeeId: session.user.id, 
+      message,
+      resumeUrl,
+      questionnaireAnswers,
+    })
     revalidatePath("/dashboard/employee/applications")
     revalidatePath("/dashboard/founder/applicants")
   } catch {
-    return { error: "Failed to apply. You may have already applied to this idea." }
+    return { error: "Failed to apply. You may have already applied for this specific role." }
   }
 }
 

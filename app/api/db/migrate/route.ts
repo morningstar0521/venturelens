@@ -21,8 +21,13 @@ export async function GET() {
     // ── role_requirements + applications.role_requirement_id ─────────────────
     await initRolesDb()
 
-    // ── ideas: allow 'evaluating' status by dropping the old constraint if any
-    // (there is no CHECK constraint on status — so nothing to change here)
+    // ── applications: allow multiple applications per idea (one per role) ─────
+    await sql`ALTER TABLE applications DROP CONSTRAINT IF EXISTS applications_idea_id_employee_id_key`
+    await sql`ALTER TABLE applications ADD CONSTRAINT applications_idea_employee_role_key UNIQUE (idea_id, employee_id, role_requirement_id)`
+
+    // ── applications: resume and questionnaire ───────────────────────────────
+    await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS resume_url TEXT`
+    await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS questionnaire_answers JSONB`
 
     return NextResponse.json({ ok: true, message: "Migration applied successfully." })
   } catch (err) {

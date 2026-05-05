@@ -15,11 +15,14 @@ export default async function ApplicationsPage() {
   const ideas = await getAllIdeas()
   const ideaMap = new Map(ideas.map(i => [i.id, i.title]))
 
-  const columns = ["Startup Idea", "My Message", "Applied On", "Status", ""]
+  const columns = ["Startup Idea", "Position", "My Message", "Applied On", "Status", ""]
 
   const data = applications.map(app => [
     <div key={`idea-${app.id}`} className="font-bold text-white max-w-xs truncate">
       {ideaMap.get(app.idea_id) || "Unknown Idea"}
+    </div>,
+    <div key={`role-${app.id}`} className="text-sm text-accent-yellow font-medium">
+      {app.role_title || <span className="text-white/30 italic font-normal">General Interest</span>}
     </div>,
     <div key={`msg-${app.id}`} className="text-sm text-accent-muted max-w-sm truncate" title={app.message || ""}>
       {app.message || <span className="italic opacity-50">No message</span>}

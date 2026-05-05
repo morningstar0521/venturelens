@@ -1,9 +1,10 @@
 import { auth } from "@/auth"
 import { getPublicIdeas } from "@/lib/db/ideas"
 import { getRolesByIdea } from "@/lib/db/roles"
-import { applyToRoleAction, applyToIdeaAction } from "@/actions/applications"
-import { Briefcase, Zap, Users, ChevronRight, Tag } from "lucide-react"
+import { getApplicationsByEmployee } from "@/lib/db/applications"
+import { Briefcase, Zap, Users, ChevronRight, ArrowUpRight, CheckCircle2 } from "lucide-react"
 import { DbRole } from "@/lib/db/roles"
+import Link from "next/link"
 
 export const metadata = { title: "Browse Ideas — VentureLens" }
 
@@ -25,14 +26,24 @@ const EXP_LABELS: Record<string, string> = {
 }
 
 export default async function BrowseIdeasPage() {
+  const session = await auth()
   const ideas = await getPublicIdeas()
+  const userApps = await getApplicationsByEmployee(session!.user.id)
+  
+  // Create sets for fast lookup
+  const appliedRoleIds = new Set(userApps.map(a => a.role_requirement_id).filter(Boolean))
+  const ideasWithGeneralApp = new Set(userApps.filter(a => !a.role_requirement_id).map(a => a.idea_id))
 
-  // Fetch roles for each idea
+  // Fetch roles for each idea and enrich
   const ideasWithRoles = await Promise.all(
-    ideas.map(async idea => ({
-      ...idea,
-      roles: await getRolesByIdea(idea.id).catch(() => [] as DbRole[]),
-    }))
+    ideas.map(async idea => {
+      const allRoles = await getRolesByIdea(idea.id).catch(() => [] as DbRole[])
+      return {
+        ...idea,
+        roles: allRoles,
+        hasGeneralApp: ideasWithGeneralApp.has(idea.id)
+      }
+    })
   )
 
   return (
@@ -50,149 +61,127 @@ export default async function BrowseIdeasPage() {
         </div>
       ) : (
         <div className="space-y-8">
-          {ideasWithRoles.map(idea => (
-            <div key={idea.id} className="glass-panel rounded-3xl border border-white/5 overflow-hidden">
-              {/* Idea header */}
-              <div className="p-6 border-b border-white/5">
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 flex-wrap mb-2">
-                      {idea.venture_score !== null && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-success/10 border border-success/20 text-success text-xs font-bold">
-                          <Zap className="w-3 h-3" /> {idea.venture_score}
-                        </span>
-                      )}
-                      {idea.industry && (
-                        <span className="text-xs text-white/40 px-2 py-1 bg-white/5 rounded-lg">{idea.industry}</span>
-                      )}
-                      <span className="text-xs text-white/30 capitalize">{idea.stage}</span>
+          {ideasWithRoles.map(idea => {
+            const openRoles = idea.roles.filter(r => !appliedRoleIds.has(r.id))
+            const appliedRolesInThisIdea = idea.roles.filter(r => appliedRoleIds.has(r.id))
+
+            return (
+              <div key={idea.id} className="glass-panel rounded-[2rem] border border-white/10 overflow-hidden shadow-lg hover:shadow-accent-yellow/5 transition-all duration-500">
+                {/* Idea header */}
+                <div className="p-8 border-b border-white/5 bg-white/2">
+                  <div className="flex items-start justify-between gap-6 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 flex-wrap mb-3">
+                        {idea.venture_score !== null && (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-success/10 border border-success/20 text-success text-[11px] font-black">
+                            <Zap className="w-3.5 h-3.5 fill-success" /> {idea.venture_score} SCORE
+                          </span>
+                        )}
+                        {idea.industry && (
+                          <span className="text-[10px] font-black uppercase tracking-widest text-white/40 px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg">{idea.industry}</span>
+                        )}
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/30 px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg">{idea.stage}</span>
+                      </div>
+                      <h2 className="text-2xl font-black text-white leading-tight tracking-tight">{idea.title}</h2>
+                      <p className="text-sm text-white/50 mt-2.5 line-clamp-2 leading-relaxed">{idea.description}</p>
                     </div>
-                    <h2 className="text-xl font-bold text-accent-yellow">{idea.title}</h2>
-                    <p className="text-sm text-white/60 mt-1.5 line-clamp-2">{idea.description}</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                      idea.roles.length > 0
-                        ? "bg-btn/10 text-btn border-btn/20"
-                        : "bg-white/5 text-white/40 border-white/10"
-                    }`}>
-                      <Briefcase className="w-3 h-3" />
-                      {idea.roles.length} role{idea.roles.length !== 1 ? "s" : ""} open
-                    </span>
+                    <div className="flex flex-col items-end gap-3 shrink-0">
+                      <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[11px] font-black border tracking-widest uppercase ${
+                        idea.roles.length > 0
+                          ? "bg-btn/10 text-btn border-btn/20"
+                          : "bg-white/5 text-white/40 border-white/10"
+                      }`}>
+                        <Users className="w-3.5 h-3.5" />
+                        {idea.roles.length} role{idea.roles.length !== 1 ? "s" : ""} open
+                      </span>
+                      {idea.roles.length === 0 && (
+                        idea.hasGeneralApp ? (
+                          <div className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-success/10 border border-success/20 text-success text-sm font-black">
+                            <CheckCircle2 className="w-4 h-4" /> Applied
+                          </div>
+                        ) : (
+                          <Link 
+                            href={`/dashboard/employee/browse/apply?ideaId=${idea.id}`}
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-btn text-btn-foreground text-sm font-black hover:scale-[1.02] active:scale-95 transition-all shadow-lg"
+                          >
+                            Apply to Join <ArrowUpRight className="w-4 h-4" />
+                          </Link>
+                        )
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Roles */}
-              {idea.roles.length > 0 ? (
-                <div className="p-6 space-y-4">
-                  <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
-                    <Users className="w-3.5 h-3.5" /> Open Positions
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {idea.roles.map(role => {
-                      async function applyRole(formData: FormData) {
-                        "use server"
-                        await applyToRoleAction(idea.id, role.id, formData)
-                      }
-
-                      return (
-                        <div key={role.id} className="rounded-2xl border border-white/8 bg-white/2 p-4 space-y-3">
-                          {/* Role header */}
-                          <div className="flex items-start gap-3">
-                            <div className="w-9 h-9 rounded-lg bg-btn/10 border border-btn/20 flex items-center justify-center shrink-0">
-                              <Briefcase className="w-4 h-4 text-btn" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                                <span className="font-bold text-sm text-white">{role.role_title}</span>
-                                {role.ai_suggested && (
-                                  <span className="px-1.5 py-0.5 rounded-full bg-btn/10 text-btn text-[9px] font-bold border border-btn/20">✨ AI</span>
-                                )}
+                {/* Roles */}
+                {(openRoles.length > 0 || appliedRolesInThisIdea.length > 0) && (
+                  <div className="p-8 space-y-6 bg-black/20">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-[11px] font-black text-white/30 uppercase tracking-[0.3em] flex items-center gap-2">
+                        <Briefcase className="w-4 h-4" /> Hiring Now
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Show Open Roles First */}
+                      {openRoles.map(role => (
+                        <div key={role.id} className="group rounded-[1.5rem] border border-white/5 bg-white/2 p-6 hover:bg-white/5 hover:border-white/10 transition-all duration-300 flex flex-col justify-between h-full">
+                          <div className="space-y-4">
+                            <div className="flex items-start gap-4">
+                              <div className="w-12 h-12 rounded-2xl bg-btn/10 border border-btn/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                <Briefcase className="w-5 h-5 text-btn" />
                               </div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className={`px-2 py-0.5 rounded-md border text-[10px] font-bold ${CATEGORY_COLORS[role.category] ?? "bg-white/5 text-white/40 border-white/10"}`}>
-                                  {role.category}
-                                </span>
-                                <span className="text-xs text-white/40">{EXP_LABELS[role.experience_level] ?? role.experience_level}</span>
-                                <span className="text-xs text-white/30">{role.openings} opening{role.openings !== 1 ? "s" : ""}</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <span className="font-bold text-base text-white">{role.role_title}</span>
+                                  {role.ai_suggested && (
+                                    <span className="px-1.5 py-0.5 rounded-full bg-btn/10 text-btn text-[9px] font-black border border-btn/20 tracking-tighter uppercase italic">✨ AI</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className={`px-2 py-0.5 rounded-lg border text-[10px] font-black uppercase tracking-wider ${CATEGORY_COLORS[role.category] ?? "bg-white/5 text-white/40 border-white/10"}`}>
+                                    {role.category}
+                                  </span>
+                                  <span className="text-xs text-white/40 font-medium">{EXP_LABELS[role.experience_level] ?? role.experience_level}</span>
+                                </div>
+                              </div>
+                            </div>
+                            {role.description && <p className="text-sm text-white/30 line-clamp-2 leading-relaxed">{role.description}</p>}
+                          </div>
+                          <div className="pt-6 mt-6 border-t border-white/5">
+                            <Link 
+                              href={`/dashboard/employee/browse/apply?ideaId=${idea.id}&roleId=${role.id}`}
+                              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white text-sm font-black hover:bg-btn hover:text-btn-foreground hover:border-transparent transition-all"
+                            >
+                              Apply for Role <ChevronRight className="w-4 h-4" />
+                            </Link>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Show Applied Roles as smaller/faded versions */}
+                      {appliedRolesInThisIdea.map(role => (
+                        <div key={role.id} className="rounded-[1.5rem] border border-success/10 bg-success/2 p-6 flex flex-col justify-between h-full opacity-60">
+                          <div className="space-y-4">
+                            <div className="flex items-start gap-4">
+                              <div className="w-12 h-12 rounded-2xl bg-success/10 border border-success/20 flex items-center justify-center shrink-0">
+                                <CheckCircle2 className="w-5 h-5 text-success" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-base text-white/80">{role.role_title}</h4>
+                                <span className="text-[10px] font-black text-success uppercase tracking-widest">Application Sent</span>
                               </div>
                             </div>
                           </div>
-
-                          {/* Skills */}
-                          {role.skills.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {role.skills.map(s => (
-                                <span key={s} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/5 border border-white/8 text-white/50 text-[11px]">
-                                  <Tag className="w-2.5 h-2.5" /> {s}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Description */}
-                          {role.description && (
-                            <p className="text-xs text-white/40 line-clamp-2">{role.description}</p>
-                          )}
-
-                          {/* Apply form */}
-                          <form action={applyRole} className="space-y-2 pt-1 border-t border-white/5">
-                            <textarea
-                              name="message"
-                              placeholder="Why are you a great fit for this role? (optional)"
-                              rows={2}
-                              className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/25 focus:outline-none focus:border-btn/40 resize-none"
-                            />
-                            <button
-                              type="submit"
-                              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-btn text-btn-foreground text-sm font-bold hover:bg-btn/90 transition-all"
-                            >
-                              Apply for this Role <ChevronRight className="w-4 h-4" />
-                            </button>
-                          </form>
                         </div>
-                      )
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                /* Generic apply if no roles posted */
-                <div className="p-6 border-t border-white/5">
-                  <GenericApplyForm ideaId={idea.id} />
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
   )
 }
 
-function GenericApplyForm({ ideaId }: { ideaId: string }) {
-  async function apply(formData: FormData) {
-    "use server"
-    await applyToIdeaAction(ideaId, formData)
-  }
-
-  return (
-    <form action={apply} className="space-y-3">
-      <p className="text-xs text-white/40">No specific roles posted yet — send a general application.</p>
-      <textarea
-        name="message"
-        placeholder="Tell the founder why you want to contribute…"
-        rows={2}
-        required
-        minLength={10}
-        className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-btn/40 resize-none"
-      />
-      <button
-        type="submit"
-        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-btn text-btn-foreground text-sm font-bold hover:bg-btn/90 transition-all"
-      >
-        Apply to Join <ChevronRight className="w-4 h-4" />
-      </button>
-    </form>
-  )
-}

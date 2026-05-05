@@ -230,6 +230,24 @@ minorproject/
 
 > Brief log of what was done each session. Newest entries at the top.
 
+### 2026-05-05 — Refactored Employee Application Flow
+- Replaced inline application forms in 'Browse Ideas' with a **dedicated application page** (`/dashboard/employee/browse/apply`).
+- Added a **questionnaire** with 3 key questions to the application process.
+- Implemented **resume upload** support using Base64 encoding for easy database storage.
+- Updated `applications` table schema and migration scripts to include `resume_url` and `questionnaire_answers` columns.
+- Enhanced the 'Browse Ideas' UI with more polished cards and clearer 'Apply' calls-to-action.
+
+### 2026-05-05 — Expandable Admin Idea Table & Visibility Fixes
+- Replaced `AdminIdeaReview` modal with a more intuitive **expandable row system** in the Admin Moderation dashboard. 
+- Clicking any idea row now expands it inline to reveal the full startup concept (Description, Problem, Solution, Market, Revenue).
+- Integrated `AdminIdeasTable` as a specialized Client Component for enhanced admin workflow.
+- Fixed `ReferenceError: Zap is not defined` previously found in the modal implementation (now deprecated).
+- Filtered out ideas with Venture Score < 70 for employees and admins in `lib/db/ideas.ts`.
+- Enabled multiple applications per startup by updating the `applications` table unique constraint to `(idea_id, employee_id, role_requirement_id)`.
+- Updated `app/api/db/migrate/route.ts` with the necessary SQL migration.
+- Improved the contributor's "My Applications" page to show the specific position applied for.
+- Updated server actions in `actions/applications.ts` with more accurate error messages for the new application logic.
+
 ### 2026-05-04 — AI Team Building Module & Evaluation Fixes
 - Added `role_requirements` DB table and updated `applications` table via raw SQL (`/api/db/migrate`).
 - Created `/api/ai/team-suggestions` API route for Gemini/Groq team structure generation.
@@ -277,5 +295,8 @@ minorproject/
 
 ### 2026-04-23 — Initial Setup
 - Project created with `create-next-app` (Next.js 15, TypeScript, Tailwind CSS)
+- `features/` and `context/` directories created
+- `context.md` and `UPDATE_TEMPLATE.md` set up for persistent AI context
+TypeScript, Tailwind CSS)
 - `features/` and `context/` directories created
 - `context.md` and `UPDATE_TEMPLATE.md` set up for persistent AI context
