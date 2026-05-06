@@ -47,6 +47,8 @@ export async function updateApplicationStatusAction(id: string, status: Applicat
   try {
     await updateApplicationStatus(id, status)
     revalidatePath("/dashboard/founder/applicants")
+    revalidatePath("/dashboard/founder", "layout")
+    revalidatePath("/dashboard/founder/my-team")
     revalidatePath("/dashboard/employee/applications")
   } catch {
     return { error: "Failed to update application status" }
@@ -62,6 +64,7 @@ export async function assignRoleAction(applicationId: string, role: AssignedRole
   try {
     await updateApplicationRole(applicationId, role)
     revalidatePath("/dashboard/founder/applicants")
+    revalidatePath("/dashboard/founder/my-team")
   } catch {
     return { error: "Failed to assign role" }
   }

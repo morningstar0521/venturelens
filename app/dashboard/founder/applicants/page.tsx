@@ -4,15 +4,27 @@ import { getApplicationsForIdea } from "@/lib/db/applications"
 import { getRolesByIdea } from "@/lib/db/roles"
 import { getUserById } from "@/lib/db/users"
 import { StatusBadge } from "@/components/dashboard/StatusBadge"
-import { TeamCard } from "@/components/dashboard/TeamCard"
 import {
   updateApplicationStatusAction,
   shortlistApplicationAction,
 } from "@/actions/applications"
-import { DbApplication, AssignedRole } from "@/lib/db/applications"
+import { DbApplication } from "@/lib/db/applications"
 import { DbUser } from "@/lib/db/users"
 import { DbRole } from "@/lib/db/roles"
-import { Lock, Users, Zap, Briefcase, Star } from "lucide-react"
+import {
+  Briefcase,
+  Calendar,
+  ChevronDown,
+  FileText,
+  Lock,
+  Mail,
+  MessageSquare,
+  Star,
+  UserRound,
+  Users,
+  Zap,
+} from "lucide-react"
+import type { ReactNode } from "react"
 
 export const metadata = { title: "Applicants & Team — VentureLens" }
 
@@ -173,30 +185,6 @@ export default async function FounderApplicantsPage({
         </Section>
       )}
 
-      {/* Team members */}
-      {acceptedApps.length > 0 && (
-        <div>
-          <h2 className="text-lg font-bold text-success mb-4 flex items-center gap-2">
-            Your Team
-            <span className="ml-1 px-2 py-0.5 rounded-full bg-success/10 border border-success/20 text-success text-xs font-bold">{acceptedApps.length}</span>
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {acceptedApps.map(app => (
-              <TeamCard
-                key={app.id}
-                applicationId={app.id}
-                name={app.user?.name ?? "Unknown"}
-                email={app.user?.email ?? ""}
-                skills={app.user?.skills ?? null}
-                experience={app.user?.experience ?? null}
-                assignedRole={app.assigned_role as AssignedRole | null}
-                ideaTitle={app.ideaTitle}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Rejected */}
       {rejectedApps.length > 0 && (
         <div>
@@ -221,7 +209,7 @@ export default async function FounderApplicantsPage({
 function Section({
   title, icon, count, empty, children
 }: {
-  title: string; icon: React.ReactNode; count: number; empty?: string; children: React.ReactNode
+  title: string; icon: ReactNode; count: number; empty?: string; children: ReactNode
 }) {
   return (
     <div>
@@ -244,46 +232,145 @@ function Section({
 function ApplicationCard({
   app, isLocked, actions
 }: {
-  app: EnrichedApp; isLocked: boolean; actions: React.ReactNode | null
+  app: EnrichedApp; isLocked: boolean; actions: ReactNode | null
 }) {
+  const answers = app.questionnaire_answers ?? {}
+  const answerEntries = Object.entries(answers).filter(([, answer]) => answer?.trim())
+  const appliedOn = new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(app.created_at))
+
   return (
-    <div className={`glass-panel rounded-2xl p-5 border transition-all ${isLocked ? "border-white/5 opacity-60" : "border-white/10"}`}>
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap mb-1">
-            <span className="font-bold text-white">{app.user?.name ?? "Unknown"}</span>
-            <StatusBadge status={app.status} />
-            {app.roleName && (
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-btn/10 border border-btn/20 text-btn text-[10px] font-bold">
-                <Briefcase className="w-2.5 h-2.5" /> {app.roleName}
-              </span>
-            )}
-            {isLocked && (
-              <span className="flex items-center gap-1 text-xs text-white/30">
-                <Lock className="w-3 h-3" /> Score too low to accept
-              </span>
+    <details className={`group glass-panel rounded-2xl border transition-all ${isLocked ? "border-white/5 opacity-60" : "border-white/10 hover:border-btn/20"}`}>
+      <summary className="list-none cursor-pointer p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap mb-1">
+              <span className="font-bold text-white">{app.user?.name ?? "Unknown"}</span>
+              <StatusBadge status={app.status} />
+              {app.roleName && (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-btn/10 border border-btn/20 text-btn text-[10px] font-bold">
+                  <Briefcase className="w-2.5 h-2.5" /> {app.roleName}
+                </span>
+              )}
+              {isLocked && (
+                <span className="flex items-center gap-1 text-xs text-white/30">
+                  <Lock className="w-3 h-3" /> Score too low to accept
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-white/40 mb-1">{app.user?.email}</div>
+            <div className="text-xs text-accent-muted">
+              Idea: <span className="text-accent-yellow">{app.ideaTitle}</span>
+              {app.ideaScore !== null && (
+                <span className="ml-2 text-white/30">Score: <strong className="text-btn">{app.ideaScore}</strong></span>
+              )}
+            </div>
+            {app.user?.skills && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {app.user.skills.slice(0, 5).map(s => (
+                  <span key={s} className="text-xs px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-white/50">{s}</span>
+                ))}
+              </div>
             )}
           </div>
-          <div className="text-xs text-white/40 mb-1">{app.user?.email}</div>
-          <div className="text-xs text-accent-muted">
-            Idea: <span className="text-accent-yellow">{app.ideaTitle}</span>
-            {app.ideaScore !== null && (
-              <span className="ml-2 text-white/30">Score: <strong className="text-btn">{app.ideaScore}</strong></span>
-            )}
+          <div className="flex items-center gap-2 text-xs font-bold text-btn">
+            View details
+            <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
           </div>
-          {app.user?.skills && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {app.user.skills.slice(0, 5).map(s => (
-                <span key={s} className="text-xs px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-white/50">{s}</span>
+        </div>
+      </summary>
+
+      <div className="border-t border-white/10 px-5 pb-5 pt-4 space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <DetailItem icon={<UserRound className="w-4 h-4" />} label="Applicant" value={app.user?.name ?? "Unknown"} />
+          <DetailItem icon={<Mail className="w-4 h-4" />} label="Email" value={app.user?.email ?? "Not available"} />
+          <DetailItem icon={<Calendar className="w-4 h-4" />} label="Applied on" value={appliedOn} />
+          <DetailItem icon={<Briefcase className="w-4 h-4" />} label="Experience" value={app.user?.experience ?? "Not added"} />
+        </div>
+
+        {app.user?.skills && app.user.skills.length > 0 && (
+          <div>
+            <div className="text-xs font-black text-white/30 uppercase tracking-widest mb-2">Skills</div>
+            <div className="flex flex-wrap gap-2">
+              {app.user.skills.map(skill => (
+                <span key={skill} className="text-xs px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/70">{skill}</span>
               ))}
             </div>
-          )}
-          {app.message && (
-            <p className="text-sm text-white/50 mt-2 line-clamp-2 italic">&quot;{app.message}&quot;</p>
-          )}
-        </div>
-        {actions}
+          </div>
+        )}
+
+        {app.resume_url ? (
+          <a
+            href={app.resume_url}
+            download={`${app.user?.name ?? "applicant"}-resume`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-xl border border-btn/20 bg-btn/10 px-4 py-2 text-sm font-bold text-btn hover:bg-btn/15 transition-colors"
+          >
+            <FileText className="w-4 h-4" />
+            Open resume
+          </a>
+        ) : (
+          <div className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/40">
+            <FileText className="w-4 h-4" />
+            No resume uploaded
+          </div>
+        )}
+
+        {answerEntries.length > 0 && (
+          <div>
+            <div className="text-xs font-black text-white/30 uppercase tracking-widest mb-3">Questionnaire answers</div>
+            <div className="space-y-3">
+              {answerEntries.map(([question, answer]) => (
+                <div key={question} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                  <div className="text-sm font-bold text-accent-yellow">{question}</div>
+                  <p className="text-sm text-white/70 mt-2 leading-6 whitespace-pre-wrap">{answer}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {app.message && (
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+            <div className="flex items-center gap-2 text-xs font-black text-white/30 uppercase tracking-widest">
+              <MessageSquare className="w-4 h-4" />
+              Additional message
+            </div>
+            <p className="text-sm text-white/70 mt-2 leading-6 whitespace-pre-wrap">{app.message}</p>
+          </div>
+        )}
+
+        {actions && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-white/10 pt-4">
+            <p className="text-xs text-white/40">Review the applicant details, then choose the next step.</p>
+            {actions}
+          </div>
+        )}
       </div>
+    </details>
+  )
+}
+
+function DetailItem({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode
+  label: string
+  value: string
+}) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+      <div className="flex items-center gap-2 text-xs font-black text-white/30 uppercase tracking-widest">
+        <span className="text-btn">{icon}</span>
+        {label}
+      </div>
+      <div className="text-sm font-semibold text-white mt-2 break-words">{value}</div>
     </div>
   )
 }
