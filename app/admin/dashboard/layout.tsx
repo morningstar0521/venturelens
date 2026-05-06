@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { Sidebar } from "@/components/dashboard/Sidebar"
-import { LayoutDashboard, Users, Lightbulb, AlertTriangle } from "lucide-react"
+import { LayoutDashboard, Users, Lightbulb } from "lucide-react"
 
 export default async function AdminDashboardLayout({
   children,

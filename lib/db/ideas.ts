@@ -74,7 +74,9 @@ export async function updateIdeaStatus(id: string, status: IdeaStatus): Promise<
 
 export async function getPublicIdeas(): Promise<DbIdea[]> {
   const rows = await sql`
-    SELECT * FROM ideas WHERE status = 'approved' ORDER BY created_at DESC
+    SELECT * FROM ideas 
+    WHERE status = 'approved' AND venture_score > 70 
+    ORDER BY created_at DESC
   `
   return rows as DbIdea[]
 }

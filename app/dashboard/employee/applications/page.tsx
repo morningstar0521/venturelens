@@ -33,7 +33,7 @@ export default async function ApplicationsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-accent-yellow">My Applications</h1>
-        <p className="text-sm text-accent-muted mt-1">Track the status of the startup ideas you've applied to.</p>
+        <p className="text-sm text-accent-muted mt-1">Track the status of the startup ideas you&apos;ve applied to.</p>
       </div>
 
       <DataTable columns={columns} data={data} emptyMessage="You haven't applied to any ideas yet." />

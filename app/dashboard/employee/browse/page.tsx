@@ -11,7 +11,7 @@ export default async function BrowseIdeasPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-accent-yellow">Browse Ideas</h1>
-        <p className="text-sm text-accent-muted mt-1">Explore approved startup concepts and apply to contribute.</p>
+        <p className="text-sm text-accent-muted mt-1">Explore high-potential startup concepts with a Venture Score above 70.</p>
       </div>
 
       {ideas.length === 0 ? (

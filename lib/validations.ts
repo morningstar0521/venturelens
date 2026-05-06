@@ -50,20 +50,6 @@ export const EmployeeRegisterSchema = z
   })
 export type EmployeeRegisterInput = z.infer<typeof EmployeeRegisterSchema>
 
-// ─── Legacy plain register schema (kept for backward compat) ─────────────
-export const RegisterSchema = z
-  .object({
-    name: z.string().min(2, "Name must be at least 2 characters").max(50),
-    email: z.string().min(1, "Email is required").email("Please enter a valid email"),
-    password: z.string().min(8).regex(/[A-Z]/).regex(/[0-9]/),
-    confirmPassword: z.string().min(1, "Please confirm your password"),
-  })
-  .refine((d) => d.password === d.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  })
-export type RegisterInput = z.infer<typeof RegisterSchema>
-
 // ─── Idea Schema ──────────────────────────────────────────────────────────
 export const IdeaSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters").max(200),

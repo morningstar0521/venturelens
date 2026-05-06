@@ -30,8 +30,9 @@ export async function applyToIdeaAction(ideaId: string, formData: FormData) {
     
     revalidatePath("/dashboard/employee/applications")
     revalidatePath("/dashboard/founder/applicants")
-  } catch (error: any) {
-    if (error.message?.includes("unique constraint")) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to apply"
+    if (errorMessage.includes("unique constraint")) {
       return { error: "You have already applied to this idea" }
     }
     return { error: "Failed to apply" }
@@ -51,7 +52,7 @@ export async function updateApplicationStatusAction(applicationId: string, statu
     await updateApplicationStatus(applicationId, status)
     revalidatePath("/dashboard/founder/applicants")
     revalidatePath("/dashboard/employee/applications")
-  } catch (error) {
+  } catch {
     return { error: "Failed to update status" }
   }
 }

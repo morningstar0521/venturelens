@@ -12,17 +12,28 @@ interface AppWithIdea extends DbApplication {
   ideaTitle: string
 }
 
-export default async function FounderApplicantsPage() {
+export default async function FounderApplicantsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ idea?: string }>
+}) {
+  const { idea: filterIdeaId } = await searchParams
   const session = await auth()
   const ideas = await getIdeasByFounder(session!.user.id)
 
-  const allApplications: AppWithIdea[] = []
-
-  for (const idea of ideas) {
-    const apps = await getApplicationsForIdea(idea.id)
-    allApplications.push(...apps.map(app => ({ ...app, ideaTitle: idea.title })))
+  let filteredIdeas = ideas
+  if (filterIdeaId) {
+    filteredIdeas = ideas.filter(i => i.id === filterIdeaId)
   }
 
+  const appsByIdea = await Promise.all(
+    filteredIdeas.map(async (idea) => {
+      const apps = await getApplicationsForIdea(idea.id)
+      return apps.map(app => ({ ...app, ideaTitle: idea.title }))
+    })
+  )
+
+  const allApplications: AppWithIdea[] = appsByIdea.flat()
   allApplications.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
   const data = await Promise.all(allApplications.map(async (app) => {
