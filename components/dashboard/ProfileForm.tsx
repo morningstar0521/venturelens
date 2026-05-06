@@ -50,10 +50,10 @@ export function ProfileForm({ user }: { user: DbUser }) {
 
     startTransition(async () => {
       const res = await updateProfileAction(formData)
-      if (res?.error) {
-        setError(res.error)
+      if (!res.success) {
+        setError(res.message)
       } else {
-        setSuccess("Changes saved successfully.")
+        setSuccess(res.message)
         router.refresh()
       }
     })
