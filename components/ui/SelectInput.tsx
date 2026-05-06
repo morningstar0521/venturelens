@@ -26,8 +26,7 @@ export function SelectInput({ label, name, value, onChange, options, placeholder
       <div className="relative">
         <select
           name={name}
-          value={value}
-          defaultValue={defaultValue ?? ""}
+          {...(value !== undefined ? { value } : { defaultValue: defaultValue ?? "" })}
           onChange={onChange ? (e) => onChange(e.target.value) : undefined}
           disabled={disabled}
           required={required}

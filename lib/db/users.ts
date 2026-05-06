@@ -13,6 +13,7 @@ export interface DbUser {
   skills: string[] | null
   experience: string | null
   is_active: boolean
+  last_active_path: string | null
   created_at: Date
 }
 
@@ -88,10 +89,19 @@ export async function updateUserStatus(id: string, isActive: boolean): Promise<v
   `
 }
 
-export async function updateUserProfile(id: string, data: { skills?: string[], experience?: string }): Promise<void> {
+export async function updateUserProfile(id: string, data: {
+  name?: string
+  startupName?: string | null
+  skills?: string[] | null
+  experience?: string | null
+}): Promise<void> {
   await sql`
     UPDATE users 
-    SET skills = ${data.skills ?? null}, experience = ${data.experience ?? null}
+    SET
+      name = COALESCE(${data.name ?? null}, name),
+      startup_name = ${data.startupName ?? null},
+      skills = ${data.skills ?? null},
+      experience = ${data.experience ?? null}
     WHERE id = ${id}
   `
 }

@@ -54,6 +54,10 @@ export type EmployeeRegisterInput = z.infer<typeof EmployeeRegisterSchema>
 export const IdeaSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters").max(200),
   description: z.string().min(20, "Please provide more details (min 20 characters)"),
+  problemStatement: z.string().min(20, "Describe the problem in detail (min 20 chars)").optional().or(z.literal("")),
+  solution: z.string().min(20, "Describe your solution (min 20 chars)").optional().or(z.literal("")),
+  targetAudience: z.string().min(10, "Describe your target audience (min 10 chars)").optional().or(z.literal("")),
+  revenueModel: z.string().min(10, "Describe your revenue model (min 10 chars)").optional().or(z.literal("")),
   industry: z.string().min(2, "Industry is required").max(100),
   stage: z.enum(["idea", "mvp", "growth"]),
 })
@@ -64,3 +68,13 @@ export const ApplicationSchema = z.object({
   message: z.string().min(10, "Please write a brief message (min 10 characters)").max(1000),
 })
 export type ApplicationInput = z.infer<typeof ApplicationSchema>
+
+// ─── Update Profile Schema ────────────────────────────────────────────────
+export const UpdateProfileSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters").max(50),
+  skills: z.array(z.string().min(1)).min(1, "Add at least one skill"),
+  experience: z.enum(["junior", "mid", "senior", "lead"], {
+    message: "Please select your experience level",
+  }),
+})
+export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>

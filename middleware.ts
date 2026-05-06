@@ -9,10 +9,7 @@ export default auth((req) => {
   const isAuthPage =
     pathname.startsWith("/login") || pathname.startsWith("/register")
 
-  const isProtectedPage =
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/profile") ||
-    pathname.startsWith("/settings")
+  const isProtectedPage = pathname.startsWith("/dashboard")
 
   const isAdminPage = pathname.startsWith("/admin/dashboard")
   const isFounderPage = pathname.startsWith("/dashboard/founder")

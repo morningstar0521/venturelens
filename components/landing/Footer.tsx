@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { Zap, Globe, Link2, Code2 } from "lucide-react"
+import Image from "next/image"
+import { Globe, Link2, Code2 } from "lucide-react"
 
 const links = {
   Product: [
@@ -30,9 +31,13 @@ export function Footer() {
           {/* Brand column */}
           <div className="lg:col-span-2 space-y-4">
             <Link href="/" className="flex items-center gap-2.5 group w-fit">
-              <div className="w-8 h-8 rounded-xl bg-btn flex items-center justify-center">
-                <Zap className="w-4 h-4 text-btn-text fill-btn-text" />
-              </div>
+              <Image
+                src="/logo/logo.png"
+                alt="VentureLens"
+                width={36}
+                height={40}
+                className="h-10 w-auto object-contain"
+              />
               <span className="font-bold text-lg tracking-tight">
                 <span className="text-btn">Venture</span>
                 <span className="text-accent-yellow">Lens</span>

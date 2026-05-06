@@ -1,26 +1,70 @@
+"use client"
+
 import React from "react"
+import { IdeaStatus } from "@/lib/db/ideas"
+import { ApplicationStatus } from "@/lib/db/applications"
 
-export function StatusBadge({ status }: { status: string | boolean }) {
-  if (typeof status === 'boolean') {
-    return status ? (
-      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/20">Active</span>
-    ) : (
-      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-error/10 text-error border border-error/20">Suspended</span>
-    )
+type AnyStatus = IdeaStatus | ApplicationStatus | string
+
+const CONFIG: Record<string, { label: string; classes: string; dot?: string; animate?: boolean }> = {
+  pending: {
+    label: "Pending Review",
+    classes: "bg-white/5 text-white/70 border-white/10",
+    dot: "bg-white/40",
+  },
+  evaluating: {
+    label: "AI Evaluating…",
+    classes: "bg-blue-500/10 text-blue-300 border-blue-400/20",
+    dot: "bg-blue-400",
+    animate: true,
+  },
+  approved: {
+    label: "Approved",
+    classes: "bg-success/10 text-success border-success/20",
+    dot: "bg-success",
+  },
+  rejected: {
+    label: "Rejected",
+    classes: "bg-error/10 text-error border-error/20",
+    dot: "bg-error",
+  },
+  accepted: {
+    label: "Accepted",
+    classes: "bg-success/10 text-success border-success/20",
+    dot: "bg-success",
+  },
+  shortlisted: {
+    label: "Shortlisted",
+    classes: "bg-violet-500/10 text-violet-300 border-violet-400/20",
+    dot: "bg-violet-400",
+  },
+  active: {
+    label: "Active",
+    classes: "bg-success/10 text-success border-success/20",
+    dot: "bg-success",
+  },
+  suspended: {
+    label: "Suspended",
+    classes: "bg-error/10 text-error border-error/20",
+    dot: "bg-error",
+  },
+}
+
+export function StatusBadge({ status }: { status: AnyStatus }) {
+  const cfg = CONFIG[status] ?? {
+    label: status.charAt(0).toUpperCase() + status.slice(1),
+    classes: "bg-white/5 text-white/50 border-white/10",
+    dot: "bg-white/30",
   }
-
-  const styles: Record<string, string> = {
-    pending: "bg-btn/10 text-btn border-btn/20",
-    approved: "bg-success/10 text-success border-success/20",
-    rejected: "bg-error/10 text-error border-error/20",
-    accepted: "bg-success/10 text-success border-success/20",
-  }
-
-  const defaultStyle = "bg-white/10 text-white border-white/20"
 
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border capitalize ${styles[status] || defaultStyle}`}>
-      {status}
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${cfg.classes}`}
+    >
+      <span
+        className={`w-1.5 h-1.5 rounded-full ${cfg.dot} ${cfg.animate ? "animate-pulse" : ""}`}
+      />
+      {cfg.label}
     </span>
   )
 }

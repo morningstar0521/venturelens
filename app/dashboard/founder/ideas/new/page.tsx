@@ -1,8 +1,11 @@
+import { requireFounderSession } from "@/lib/auth/guards"
 import { SubmitIdeaForm } from "@/components/dashboard/SubmitIdeaForm"
 
 export const metadata = { title: "Submit Idea — VentureLens" }
 
-export default function NewIdeaPage() {
+export default async function NewIdeaPage() {
+  await requireFounderSession()
+
   return (
     <div className="max-w-2xl space-y-6">
       <div>
