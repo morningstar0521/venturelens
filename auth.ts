@@ -2,10 +2,10 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { getUserByEmail } from "@/lib/db/users"
-
-// Admin credentials are now stored in the database
+import { authConfig } from "./auth.config"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  ...authConfig,
   providers: [
     Credentials({
       credentials: {
@@ -20,11 +20,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!email || !password || !role) return null
 
-        // ── Database lookup for all roles ───────────────────────────
         const user = await getUserByEmail(email)
         if (!user) return null
 
-        // Ensure the role matches what the user signed up as
         if (user.role !== role) return null
 
         const passwordsMatch = await bcrypt.compare(password, user.password_hash)
@@ -34,27 +32,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
-
   session: { strategy: "jwt" },
-
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id   = user.id as string
-        token.role = (user.role ?? "founder") as string
-      }
-      return token
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id   = token.id   as string
-        session.user.role = token.role as string
-      }
-      return session
-    },
-  },
-
-  pages: {
-    signIn: "/login",
-  },
 })

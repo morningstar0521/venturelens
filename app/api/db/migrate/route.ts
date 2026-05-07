@@ -23,7 +23,15 @@ export async function GET() {
 
     // ── applications: allow multiple applications per idea (one per role) ─────
     await sql`ALTER TABLE applications DROP CONSTRAINT IF EXISTS applications_idea_id_employee_id_key`
-    await sql`ALTER TABLE applications ADD CONSTRAINT applications_idea_employee_role_key UNIQUE (idea_id, employee_id, role_requirement_id)`
+    await sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'applications_idea_employee_role_key') THEN
+          ALTER TABLE applications ADD CONSTRAINT applications_idea_employee_role_key UNIQUE (idea_id, employee_id, role_requirement_id);
+        END IF;
+      END
+      $$;
+    `
 
     // ── applications: resume and questionnaire ───────────────────────────────
     await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS resume_url TEXT`
