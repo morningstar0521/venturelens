@@ -1,12 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { LogOut, Menu, X, UserCircle, ChevronLeft, ChevronRight } from "lucide-react"
 import { useState, useTransition } from "react"
 import { signOut } from "next-auth/react"
 import { saveActivePathAction } from "@/actions/nav"
+import { VentureLensLogo } from "@/components/ui/VentureLensLogo"
 
 export interface NavLink {
   label: string
@@ -90,9 +90,20 @@ export function Sidebar({ role, userName, links, isCollapsed = false, onToggle }
         />
       )}
 
+      {/* Desktop collapse toggle — fixed, always visible, slides with sidebar */}
+      {onToggle && (
+        <button
+          onClick={onToggle}
+          style={{ left: isCollapsed ? "66px" : "242px" }}
+          className="hidden lg:flex fixed top-[41px] -translate-y-1/2 w-7 h-7 rounded-full bg-btn text-btn-text items-center justify-center shadow-[0_8px_24px_rgba(255,176,0,0.35)] hover:scale-110 transition-all duration-300 z-[60]"
+        >
+          {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </button>
+      )}
+
       {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 glass-panel border-l-0 border-t-0 border-b-0
+        fixed inset-y-0 left-0 z-50 bg-ink/82 backdrop-blur-2xl border-r border-white/10
         flex flex-col transform transition-all duration-300 lg:translate-x-0
         ${isCollapsed ? "lg:w-20 w-64" : "w-64"}
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
@@ -104,34 +115,13 @@ export function Sidebar({ role, userName, links, isCollapsed = false, onToggle }
             onClick={() => handleNavClick(homeHref)}
             className="flex items-center gap-3"
           >
-            <Image
-              src="/logo/logo.png"
-              alt="VentureLens"
-              width={36}
-              height={40}
-              priority
-              className="h-9 w-auto object-contain"
-            />
-            {!isCollapsed && (
-              <span className="font-bold text-lg whitespace-nowrap">
-                <span className="text-btn">Venture</span><span className="text-accent-yellow">Lens</span>
-              </span>
-            )}
+            <VentureLensLogo size={34} showText={!isCollapsed} />
           </Link>
+
           <button onClick={() => setIsOpen(false)} className="lg:hidden text-accent-muted">
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        {/* Collapse toggle (Desktop) */}
-        {onToggle && (
-          <button
-            onClick={onToggle}
-            className="hidden lg:flex absolute -right-3 top-20 w-6 h-6 rounded-full bg-btn text-white items-center justify-center shadow-lg hover:scale-110 transition-transform z-50"
-          >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
-        )}
 
         {/* Role badge */}
         {!isCollapsed && (
@@ -157,8 +147,8 @@ export function Sidebar({ role, userName, links, isCollapsed = false, onToggle }
                   transition-all duration-150 group relative
                   ${isCollapsed ? "px-3 justify-center" : "px-4"}
                   ${isActive
-                    ? "bg-btn/15 text-accent-yellow border border-btn/20 shadow-sm"
-                    : "text-accent-muted hover:bg-white/5 hover:text-white border border-transparent"
+                    ? "bg-btn/15 text-white border border-btn/25 shadow-[0_12px_28px_rgba(255,176,0,0.12)]"
+                    : "text-accent-muted hover:bg-white/[0.075] hover:text-white border border-transparent"
                   }
                 `}
                 title={isCollapsed ? link.label : ""}
@@ -181,7 +171,7 @@ export function Sidebar({ role, userName, links, isCollapsed = false, onToggle }
 
         {/* Footer */}
         <div className="p-4 border-t border-white/5">
-          <div className={`flex flex-col ${isCollapsed ? "items-center gap-4" : "px-4 py-3"}`}>
+          <div className={`flex flex-col ${isCollapsed ? "items-center gap-4" : "px-4 py-3 rounded-2xl bg-white/[0.04] border border-white/10"}`}>
             <Link
               href={profileHref}
               onClick={() => handleNavClick(profileHref)}

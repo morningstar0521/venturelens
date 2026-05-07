@@ -8,9 +8,9 @@ interface VentureScoreGaugeProps {
 }
 
 function scoreColor(score: number): string {
-  if (score >= 70) return "#6bcb77"
-  if (score >= 50) return "#F8C662"
-  return "#ff6b6b"
+  if (score >= 70) return "#00d47e"
+  if (score >= 50) return "#ffb000"
+  return "#ff5d73"
 }
 
 function scoreLabel(score: number): string {

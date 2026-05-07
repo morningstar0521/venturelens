@@ -22,7 +22,7 @@ interface SelectInputProps {
 export function SelectInput({ label, name, value, onChange, options, placeholder = "Select an option", error, disabled, required, defaultValue }: SelectInputProps) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-accent-muted pl-1">{label}</label>
+      <label className="block text-sm font-bold text-accent-muted pl-1">{label}</label>
       <div className="relative">
         <select
           name={name}
@@ -31,10 +31,10 @@ export function SelectInput({ label, name, value, onChange, options, placeholder
           disabled={disabled}
           required={required}
           className={`w-full h-12 rounded-2xl px-4 pr-10 appearance-none
-            bg-bg-secondary/50 border backdrop-blur-md text-sm transition-all duration-300 outline-none text-white
+            glass-input text-sm outline-none text-white
             ${error
               ? "border-error focus:border-error"
-              : "border-border-subtle focus:border-focus focus:ring-1 focus:ring-focus"
+              : ""
             }
             ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
         >

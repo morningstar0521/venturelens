@@ -38,11 +38,10 @@ export function TagInput({ label, value, onChange, error, disabled, placeholder 
 
   return (
     <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-accent-yellow/90">{label}</label>
+      <label className="block text-sm font-bold text-accent-muted pl-1">{label}</label>
       <div
-        className={`min-h-[48px] w-full rounded-2xl px-3 py-2 flex flex-wrap gap-2 items-center
-          bg-bg-secondary/50 border backdrop-blur-md transition-all duration-300
-          ${error ? "border-error focus-within:border-error" : "border-border-subtle focus-within:border-focus focus-within:ring-1 focus-within:ring-focus"}
+        className={`glass-input min-h-[48px] w-full rounded-2xl px-3 py-2 flex flex-wrap gap-2 items-center
+          ${error ? "border-error focus-within:border-error" : ""}
           ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-text"}`}
       >
         {value.map((tag) => (

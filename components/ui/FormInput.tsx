@@ -17,7 +17,7 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
 
     return (
       <div className="space-y-1.5 flex flex-col w-full">
-        <label className="text-sm font-medium text-accent-muted pl-1">
+        <label className="text-sm font-bold text-accent-muted pl-1">
           {label}
         </label>
         <div className="relative">
@@ -26,7 +26,7 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
             type={inputType}
             ref={ref}
             className={cn(
-              "glass-input w-full rounded-2xl px-4 py-3 text-white placeholder:text-accent-muted/40 outline-none",
+              "glass-input w-full rounded-2xl px-4 py-3.5 text-white placeholder:text-accent-muted/45 outline-none",
               isPassword && "pr-12",
               error && "border-error focus:ring-error focus:border-error animate-shake",
               className

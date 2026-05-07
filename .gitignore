@@ -47,3 +47,5 @@ next-env.d.ts
 GEMINI.md
 MEMORY.md
 
+# local preview folders
+/ui-frontend-preview/

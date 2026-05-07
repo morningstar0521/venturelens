@@ -8,9 +8,10 @@ import { Footer }       from "@/components/landing/Footer"
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative overflow-hidden">
+      <div className="site-spotlight pointer-events-none fixed inset-0 z-0" />
       <Navbar />
-      <main>
+      <main className="relative z-10">
         <Hero />
         <HowItWorks />
         <Features />

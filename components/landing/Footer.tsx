@@ -1,88 +1,46 @@
 import Link from "next/link"
-import Image from "next/image"
-import { Globe, Link2, Code2 } from "lucide-react"
+import { Code2, Globe, Link2 } from "lucide-react"
+import { VentureLensLogo } from "@/components/ui/VentureLensLogo"
 
-const links = {
-  Product: [
-    { label: "How It Works", href: "#how-it-works" },
-    { label: "Features",     href: "#features"     },
-    { label: "Pricing",      href: "#"             },
-    { label: "Changelog",    href: "#"             },
-  ],
-  Company: [
-    { label: "About",   href: "#" },
-    { label: "Blog",    href: "#" },
-    { label: "Careers", href: "#" },
-    { label: "Contact", href: "#" },
-  ],
-  Legal: [
-    { label: "Privacy Policy",    href: "#" },
-    { label: "Terms of Service",  href: "#" },
-    { label: "Cookie Policy",     href: "#" },
-  ],
-}
+const links = [
+  { label: "Workflow", href: "#how-it-works" },
+  { label: "Features", href: "#features" },
+  { label: "Results", href: "#testimonials" },
+  { label: "Login", href: "/login" },
+]
 
-// ─── Footer ────────────────────────────────────────────────────────────────
 export function Footer() {
   return (
-    <footer className="border-t border-white/5 bg-bg-secondary/40">
-      <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
-          {/* Brand column */}
-          <div className="lg:col-span-2 space-y-4">
-            <Link href="/" className="flex items-center gap-2.5 group w-fit">
-              <Image
-                src="/logo/logo.png"
-                alt="VentureLens"
-                width={36}
-                height={40}
-                className="h-10 w-auto object-contain"
-              />
-              <span className="font-bold text-lg tracking-tight">
-                <span className="text-btn">Venture</span>
-                <span className="text-accent-yellow">Lens</span>
-              </span>
-            </Link>
-            <p className="text-accent-muted text-sm leading-relaxed max-w-xs">
-              AI-powered startup validation. Get your Venture Score, understand your competition,
-              and find your founding team — all before you build.
-            </p>
-            {/* Social links */}
-            <div className="flex gap-3 pt-2">
-              {[Globe, Link2, Code2].map((Icon, i) => (
-                <a key={i} href="#"
-                  className="w-9 h-9 rounded-xl border border-border-subtle text-accent-muted hover:text-accent-yellow hover:border-btn/40 flex items-center justify-center transition-all">
-                  <Icon className="w-4 h-4" />
-                </a>
-              ))}
-            </div>
-          </div>
-
-          {/* Link columns */}
-          {Object.entries(links).map(([category, items]) => (
-            <div key={category} className="space-y-4">
-              <h4 className="font-semibold text-accent-yellow text-sm">{category}</h4>
-              <ul className="space-y-2.5">
-                {items.map((item) => (
-                  <li key={item.label}>
-                    <a href={item.href} className="text-sm text-accent-muted hover:text-accent-yellow transition-colors">
-                      {item.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+    <footer className="border-t border-white/10 bg-ink/60 px-6 py-10">
+      <div className="mx-auto flex max-w-7xl flex-col justify-between gap-8 md:flex-row md:items-center">
+        <div>
+          <Link href="/" className="flex w-fit items-center gap-2.5">
+            <VentureLensLogo size={32} showText />
+          </Link>
+          <p className="mt-3 max-w-md text-sm leading-6 text-accent-muted">
+            AI-powered startup validation for founders, contributors, and admins who need clearer early decisions.
+          </p>
         </div>
 
-        {/* Bottom bar */}
-        <div className="mt-16 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-accent-muted">
-            © {new Date().getFullYear()} VentureLens. All rights reserved.
-          </p>
-          <p className="text-xs text-accent-muted">
-            Built for founders, by founders. 🚀
-          </p>
+        <div className="flex flex-col gap-5 sm:items-end">
+          <div className="flex flex-wrap gap-4">
+            {links.map((link) => (
+              <a key={link.label} href={link.href} className="text-sm text-accent-muted transition hover:text-white">
+                {link.label}
+              </a>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            {[Globe, Link2, Code2].map((Icon, index) => (
+              <a
+                key={index}
+                href="#"
+                className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 text-accent-muted transition hover:border-btn/30 hover:text-btn"
+              >
+                <Icon className="h-4 w-4" />
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </footer>

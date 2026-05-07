@@ -16,17 +16,13 @@ export function AuthCard({ children, title, subtitle, className, icon }: AuthCar
   return (
     <div className="w-full max-w-md mx-auto animate-in fade-in zoom-in-95 duration-500">
       <div className={cn(
-        // Thick border, strong glass background, prominent shadow
-        "rounded-3xl p-9 sm:p-11",
-        "bg-card/80 backdrop-blur-2xl",
-        "border-2 border-border-subtle",
-        "shadow-[0_8px_64px_0_rgba(0,0,0,0.55),0_0_0_1px_rgba(248,198,34,0.07)]",
-        "ring-1 ring-white/5",
+        "premium-card overflow-hidden rounded-[1.75rem] p-0",
         className
       )}>
+        <div className="bharat-band h-1.5" />
         {/* Icon + heading */}
-        <div className="flex flex-col items-center text-center mb-8 space-y-3">
-          <div className="w-14 h-14 rounded-2xl bg-btn/15 border-2 border-btn/30 mb-1 flex items-center justify-center shadow-[0_0_24px_rgba(248,198,98,0.2)]">
+        <div className="flex flex-col items-center text-center mb-8 space-y-3 px-9 pt-9 sm:px-11 sm:pt-11">
+          <div className="w-14 h-14 rounded-2xl bg-btn/15 border border-btn/35 mb-1 flex items-center justify-center shadow-[0_18px_42px_rgba(255,176,0,0.22)]">
             {icon ?? (
               <svg className="w-6 h-6 text-btn" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -37,7 +33,9 @@ export function AuthCard({ children, title, subtitle, className, icon }: AuthCar
           <h1 className="text-3xl font-bold tracking-tight text-accent-yellow">{title}</h1>
           {subtitle && <p className="text-accent-muted text-sm">{subtitle}</p>}
         </div>
-        {children}
+        <div className="px-9 pb-9 sm:px-11 sm:pb-11">
+          {children}
+        </div>
       </div>
     </div>
   )

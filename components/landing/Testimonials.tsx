@@ -1,76 +1,49 @@
-import { Quote } from "lucide-react"
+import Link from "next/link"
+import { ArrowRight, Quote } from "lucide-react"
 
-const testimonials = [
-  {
-    quote:
-      "VentureLens gave us a Venture Score of 78 before we even built an MVP. That number alone convinced our first angel investor to write a cheque.",
-    name: "Priya Sharma",
-    title: "Founder, GreenLoop",
-    initials: "PS",
-    color: "from-btn/30 to-success/20",
-  },
-  {
-    quote:
-      "The AI competitive analysis surfaced three competitors I had no idea existed. Better to know before we spent ₹40 lakhs on development.",
-    name: "Arjun Mehta",
-    title: "Co-founder, DeliverFast",
-    initials: "AM",
-    color: "from-success/20 to-btn/20",
-  },
-  {
-    quote:
-      "Found my technical co-founder through the contributor matching within a week. The skill-fit algorithm is surprisingly accurate.",
-    name: "Sarah Chen",
-    title: "Founder, MindBridge AI",
-    initials: "SC",
-    color: "from-accent-yellow/20 to-btn/20",
-  },
+const stories = [
+  ["Priya Sharma", "Founder, GreenLoop", "We changed our launch city and pricing after the report. That saved us a month of confused MVP work."],
+  ["Arjun Mehta", "Co-founder, DeliverFast", "The risk radar was blunt in the right way. It showed us what investors would question first."],
+  ["Sarah Chen", "Founder, MindBridge AI", "The contributor matching gave us a shortlist of builders who actually fit the idea."],
 ]
 
-// ─── Testimonials Section ──────────────────────────────────────────────────
 export function Testimonials() {
   return (
-    <section id="testimonials" className="py-24 px-6 relative">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[2px] bg-gradient-to-r from-transparent via-btn/30 to-transparent" />
-      </div>
-
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16 space-y-4">
-          <p className="text-btn text-sm font-semibold uppercase tracking-widest">Founder Stories</p>
-          <h2 className="text-4xl lg:text-5xl font-extrabold text-accent-yellow">
-            Trusted by Ambitious<br className="hidden sm:block" /> Founders
-          </h2>
+    <section id="testimonials" className="px-6 py-24">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-10 text-center">
+          <p className="text-sm font-black uppercase tracking-[0.24em] text-btn">Founder signal</p>
+          <h2 className="mt-3 text-4xl font-black text-white lg:text-5xl">Make the next step obvious.</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {testimonials.map((t) => (
-            <div key={t.name}
-              className="glass-panel rounded-3xl p-8 space-y-6 border border-white/5 hover:border-btn/20 hover:-translate-y-1 transition-all duration-300 hover:shadow-[0_0_40px_rgba(248,198,34,0.07)]">
-              <Quote className="w-8 h-8 text-btn/40" />
-              <p className="text-accent-muted leading-relaxed text-sm italic">&ldquo;{t.quote}&rdquo;</p>
-              <div className="flex items-center gap-3 pt-2 border-t border-white/5">
-                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.color} border border-btn/20 flex items-center justify-center flex-shrink-0`}>
-                  <span className="text-xs font-bold text-accent-yellow">{t.initials}</span>
-                </div>
-                <div>
-                  <p className="font-semibold text-accent-yellow text-sm">{t.name}</p>
-                  <p className="text-xs text-accent-muted">{t.title}</p>
-                </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {stories.map(([name, role, quote]) => (
+            <div key={name} className="premium-card rounded-3xl p-6">
+              <Quote className="h-8 w-8 text-btn" />
+              <p className="mt-5 text-sm leading-7 text-accent-muted">&ldquo;{quote}&rdquo;</p>
+              <div className="mt-8 border-t border-white/10 pt-5">
+                <p className="font-black text-white">{name}</p>
+                <p className="mt-1 text-xs text-accent-muted">{role}</p>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Trust strip */}
-        <div className="mt-16 glass-panel rounded-3xl p-8 flex flex-col sm:flex-row items-center justify-between gap-6 border border-btn/10">
-          <p className="text-accent-yellow font-bold text-xl text-center sm:text-left">
-            Ready to validate your idea?
-          </p>
-          <a href="/register"
-            className="inline-flex items-center gap-2 bg-btn hover:bg-btn-hover text-btn-text font-bold px-8 py-3.5 rounded-2xl shadow-[0_0_24px_rgba(248,198,34,0.3)] hover:shadow-[0_0_36px_rgba(248,198,34,0.5)] transition-all duration-300 whitespace-nowrap">
-            Start Free Today →
-          </a>
+        <div className="mt-6 overflow-hidden rounded-[2rem] border border-btn/25 bg-btn text-btn-text shadow-[0_24px_70px_rgba(255,176,0,0.22)]">
+          <div className="bharat-band h-1.5" />
+          <div className="flex flex-col justify-between gap-5 p-7 sm:flex-row sm:items-center lg:p-9">
+            <div>
+              <p className="text-3xl font-black">Ready to validate an idea?</p>
+              <p className="mt-2 text-sm font-medium text-btn-text/75">Create a founder account and generate your first Venture Score.</p>
+            </div>
+            <Link
+              href="/register"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-btn-text px-6 py-3.5 text-sm font-black text-btn transition hover:bg-black"
+            >
+              Get Started
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       </div>
     </section>

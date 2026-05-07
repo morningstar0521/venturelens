@@ -9,13 +9,13 @@ type AnyStatus = IdeaStatus | ApplicationStatus | string
 const CONFIG: Record<string, { label: string; classes: string; dot?: string; animate?: boolean }> = {
   pending: {
     label: "Pending Review",
-    classes: "bg-white/5 text-white/70 border-white/10",
-    dot: "bg-white/40",
+    classes: "bg-white/7 text-accent-muted border-white/12",
+    dot: "bg-accent-muted",
   },
   evaluating: {
     label: "AI Evaluating…",
-    classes: "bg-blue-500/10 text-blue-300 border-blue-400/20",
-    dot: "bg-blue-400",
+    classes: "bg-ashoka/12 text-cyan border-ashoka/25",
+    dot: "bg-cyan",
     animate: true,
   },
   approved: {
@@ -35,8 +35,8 @@ const CONFIG: Record<string, { label: string; classes: string; dot?: string; ani
   },
   shortlisted: {
     label: "Shortlisted",
-    classes: "bg-violet-500/10 text-violet-300 border-violet-400/20",
-    dot: "bg-violet-400",
+    classes: "bg-btn/12 text-btn border-btn/25",
+    dot: "bg-btn",
   },
   active: {
     label: "Active",

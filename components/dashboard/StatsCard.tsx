@@ -14,7 +14,7 @@ export function StatsCard({
   trend?: { value: string; positive: boolean }
 }) {
   return (
-    <div className="glass-panel rounded-3xl p-6 border border-white/5 space-y-3">
+    <div className="premium-card rounded-3xl p-6 space-y-3 transition hover:-translate-y-1 hover:border-btn/25">
       <div className={`w-10 h-10 rounded-xl bg-${color}/10 border border-${color}/20 flex items-center justify-center`}>
         <Icon className={`w-5 h-5 text-${color}`} />
       </div>

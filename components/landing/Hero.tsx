@@ -1,129 +1,159 @@
 import Link from "next/link"
-import { ArrowRight, Sparkles, TrendingUp } from "lucide-react"
+import {
+  ArrowRight,
+  BadgeIndianRupee,
+  MapPin,
+  Radar,
+  Sparkles,
+  Target,
+  TrendingUp,
+  Users,
+  Zap,
+} from "lucide-react"
 
-// ─── Hero Section ──────────────────────────────────────────────────────────
+const metrics = [
+  ["84", "Venture Score"],
+  ["₹18Cr", "Market signal"],
+  ["23", "Builder matches"],
+]
+
+const signals = [
+  { label: "Bengaluru SaaS demand", value: 92, color: "bg-btn" },
+  { label: "UPI payment fit", value: 88, color: "bg-success" },
+  { label: "Competitive gap", value: 74, color: "bg-cyan" },
+]
+
 export function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
-      {/* Ambient gradient orbs */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full bg-btn/10 blur-[120px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-accent-yellow/5 blur-[100px] animate-pulse [animation-delay:1.5s]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-card/40 blur-[80px]" />
-      </div>
+    <section className="relative isolate overflow-hidden px-6 pb-24 pt-32 sm:pt-36 lg:min-h-screen">
+      <div className="landing-grid absolute inset-0 -z-20" />
+      <div className="hero-glow absolute inset-0 -z-10" />
 
-      {/* Subtle grid overlay */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{ backgroundImage: "linear-gradient(#F8C622 1px,transparent 1px),linear-gradient(90deg,#F8C622 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
-
-      <div className="relative max-w-7xl mx-auto px-6 py-24 grid lg:grid-cols-2 gap-16 items-center">
-        {/* Left: Copy */}
-        <div className="text-center lg:text-left space-y-8">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-btn/10 border border-btn/20 rounded-full px-4 py-1.5 text-sm text-btn font-medium">
-            <Sparkles className="w-3.5 h-3.5" />
-            AI-Powered Startup Validation
+      <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
+        <div>
+          <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-btn/30 bg-btn/10 px-3 py-1.5 text-sm font-semibold text-accent-yellow shadow-[0_12px_40px_rgba(255,176,0,0.14)] backdrop-blur-xl">
+            <Sparkles className="h-4 w-4 text-btn" />
+            Built for Indian founders, teams, and startup cells
           </div>
 
-          <h1 className="text-5xl lg:text-6xl xl:text-7xl font-extrabold leading-[1.08] tracking-tight">
-            Validate Your<br />
-            <span className="text-btn">Startup Idea</span><br />
-            <span className="text-accent-yellow">with AI</span>
+          <h1 className="max-w-3xl text-5xl font-black leading-[0.98] tracking-tight text-white sm:text-6xl lg:text-7xl">
+            Turn your startup idea into a decision-ready venture report.
           </h1>
+          <div className="bharat-band mt-7 h-1.5 w-56 rounded-full shadow-[0_0_30px_rgba(255,176,0,0.35)]" />
 
-          <p className="text-lg text-accent-muted max-w-lg leading-relaxed">
-            Get a data-driven <strong className="text-accent-yellow">Venture Score</strong>, competitive analysis,
-            and connect with the right contributors — before you write a single line of code.
+          <p className="mt-7 max-w-2xl text-lg leading-8 text-accent-muted">
+            VentureLens scores Indian-market ideas with AI, highlights risk, estimates opportunity,
+            and helps founders find the right contributors before money and months are wasted.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-            <Link href="/register"
-              className="group inline-flex items-center justify-center gap-2 bg-btn hover:bg-btn-hover text-btn-text font-bold px-8 py-4 rounded-2xl shadow-[0_0_24px_rgba(248,198,34,0.35)] hover:shadow-[0_0_36px_rgba(248,198,34,0.5)] transition-all duration-300 text-base">
-              Get Started Free
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/register"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-btn px-7 py-4 text-sm font-black text-btn-text shadow-[0_22px_55px_rgba(255,176,0,0.30)] transition hover:-translate-y-0.5 hover:bg-btn-hover"
+            >
+              Validate My Idea
+              <ArrowRight className="h-4 w-4" />
             </Link>
-            <a href="#how-it-works"
-              className="inline-flex items-center justify-center gap-2 border border-border-subtle text-accent-muted hover:text-accent-yellow hover:border-btn/40 font-semibold px-8 py-4 rounded-2xl transition-all duration-300 text-base">
+            <a
+              href="#how-it-works"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.07] px-7 py-4 text-sm font-bold text-white backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-ashoka/50"
+            >
               See How It Works
             </a>
           </div>
 
-          {/* Social proof strip */}
-          <div className="flex items-center gap-6 justify-center lg:justify-start pt-2">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-accent-yellow">500+</div>
-              <div className="text-xs text-accent-muted">Ideas Validated</div>
-            </div>
-            <div className="w-px h-8 bg-border-subtle" />
-            <div className="text-center">
-              <div className="text-2xl font-bold text-accent-yellow">1,200+</div>
-              <div className="text-xs text-accent-muted">Contributors</div>
-            </div>
-            <div className="w-px h-8 bg-border-subtle" />
-            <div className="text-center">
-              <div className="text-2xl font-bold text-accent-yellow">92%</div>
-              <div className="text-xs text-accent-muted">Accuracy Rate</div>
-            </div>
+          <div className="mt-10 grid max-w-xl grid-cols-3 gap-3">
+            {metrics.map(([value, label]) => (
+              <div key={label} className="premium-card rounded-2xl p-4">
+                <div className="text-2xl font-black text-white">{value}</div>
+                <div className="mt-1 text-xs font-medium text-accent-muted">{label}</div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Right: Mock Venture Score Card */}
-        <div className="relative flex justify-center lg:justify-end">
-          <div className="glass-panel rounded-3xl p-8 w-full max-w-sm space-y-6 border border-btn/10">
-            {/* Header */}
-            <div className="flex items-center justify-between">
+        <div className="relative">
+          <div className="premium-card overflow-hidden rounded-[1.75rem] border-btn/25 bg-surface/95 shadow-[0_34px_100px_rgba(49,92,255,0.24)]">
+            <div className="bharat-band h-1.5" />
+            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
               <div>
-                <p className="text-xs text-accent-muted font-medium uppercase tracking-widest">AI Analysis</p>
-                <h3 className="font-bold text-accent-yellow text-lg mt-0.5">EcoCart App</h3>
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-btn">AI Venture Desk</p>
+                <h2 className="mt-1 text-xl font-black text-white">EcoCart Bharat</h2>
               </div>
-              <div className="w-10 h-10 rounded-2xl bg-btn/15 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-btn" />
-              </div>
-            </div>
-
-            {/* Score gauge */}
-            <div className="text-center py-2">
-              <div className="relative inline-flex items-center justify-center w-32 h-32">
-                <svg className="absolute" width="128" height="128" viewBox="0 0 128 128">
-                  <circle cx="64" cy="64" r="56" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
-                  <circle cx="64" cy="64" r="56" fill="none" stroke="#F8C622" strokeWidth="10"
-                    strokeDasharray={`${2 * Math.PI * 56 * 0.84} ${2 * Math.PI * 56}`}
-                    strokeDashoffset={2 * Math.PI * 56 * 0.25}
-                    strokeLinecap="round" transform="rotate(-90 64 64)"
-                    style={{ filter: "drop-shadow(0 0 8px rgba(248,198,34,0.6))" }} />
-                </svg>
-                <div className="text-center z-10">
-                  <div className="text-4xl font-black text-btn">84</div>
-                  <div className="text-xs text-accent-muted">/ 100</div>
-                </div>
-              </div>
-              <p className="text-sm font-semibold text-success mt-1">High Viability ↑</p>
-            </div>
-
-            {/* Metrics */}
-            {[
-              { label: "Market Size",   val: 92, color: "bg-success" },
-              { label: "Competition",   val: 68, color: "bg-btn"     },
-              { label: "Feasibility",   val: 81, color: "bg-success" },
-              { label: "Risk Level",    val: 45, color: "bg-error"   },
-            ].map((m) => (
-              <div key={m.label} className="space-y-1.5">
-                <div className="flex justify-between text-xs">
-                  <span className="text-accent-muted">{m.label}</span>
-                  <span className="font-semibold text-white">{m.val}%</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-                  <div className={`h-full rounded-full ${m.color} transition-all`} style={{ width: `${m.val}%` }} />
-                </div>
-              </div>
-            ))}
-
-            {/* Footer badge */}
-            <div className="bg-btn/10 border border-btn/20 rounded-2xl px-4 py-2.5 flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-btn flex-shrink-0" />
-              <span className="text-xs text-accent-muted">
-                <strong className="text-btn">3 contributors</strong> matched for this idea
+              <span className="rounded-full border border-btn/30 bg-btn/15 px-3 py-1 text-xs font-bold text-accent-yellow">
+                Investor-ready
               </span>
+            </div>
+
+            <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
+              <div className="border-b border-white/10 p-5 lg:border-b-0 lg:border-r lg:border-white/10">
+                <div className="rounded-3xl border border-white/12 bg-ink/70 p-5">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-bold text-accent-muted">Venture Score</div>
+                    <TrendingUp className="h-5 w-5 text-btn" />
+                  </div>
+                  <div className="mt-6 grid place-items-center">
+                    <div className="relative grid h-48 w-48 place-items-center rounded-full border border-white/10 bg-white/[0.04]">
+                      <div className="absolute inset-5 rounded-full border-[16px] border-white/10" />
+                      <div className="absolute inset-5 rounded-full border-[16px] border-btn border-l-success border-t-ashoka shadow-[0_0_35px_rgba(255,176,0,0.20)]" />
+                      <div className="text-center">
+                        <div className="text-6xl font-black text-btn">84</div>
+                        <div className="text-xs font-black uppercase tracking-[0.24em] text-accent-muted">Strong</div>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mt-5 text-center text-sm leading-6 text-accent-muted">
+                    Strong urban demand with clear pricing tests needed before MVP spend.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4 p-5">
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { icon: BadgeIndianRupee, label: "Revenue test", value: "₹499/mo" },
+                    { icon: MapPin, label: "Best launch city", value: "Pune" },
+                    { icon: Users, label: "Team fit", value: "4 roles" },
+                    { icon: Radar, label: "Risk flags", value: "6" },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.055] p-4">
+                      <item.icon className="h-4 w-4 text-cyan" />
+                      <div className="mt-3 text-xl font-black text-white">{item.value}</div>
+                      <div className="text-xs text-accent-muted">{item.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.055] p-4">
+                  <div className="mb-4 flex items-center gap-2 text-sm font-black text-white">
+                    <Target className="h-4 w-4 text-btn" />
+                    India market signals
+                  </div>
+                  <div className="space-y-3">
+                    {signals.map((signal) => (
+                      <div key={signal.label}>
+                        <div className="mb-1.5 flex justify-between text-xs">
+                          <span className="text-accent-muted">{signal.label}</span>
+                          <span className="font-bold text-white">{signal.value}%</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-white/10">
+                          <div className={`h-full rounded-full ${signal.color}`} style={{ width: `${signal.value}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-btn/25 bg-btn/10 p-4">
+                  <div className="flex items-center gap-2 text-sm font-black text-accent-yellow">
+                    <Zap className="h-4 w-4 text-btn" />
+                    Next move
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-accent-muted">
+                    Run a 50-customer WhatsApp survey and validate willingness to pay in Pune and Bengaluru.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
