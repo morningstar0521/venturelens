@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 import { createIdea, getIdeaById, updateIdeaForReassessment, updateIdeaStatus, IdeaStage, IdeaStatus } from "@/lib/db/ideas"
 import { IdeaSchema } from "@/lib/validations"
 import { revalidatePath } from "next/cache"
+import { getBaseUrl } from "@/lib/utils/getBaseUrl"
 
 export async function submitIdeaAction(formData: FormData) {
   const session = await auth()
@@ -47,8 +48,7 @@ export async function submitIdeaAction(formData: FormData) {
 
   // Trigger AI evaluation asynchronously (fire-and-forget)
   // Use absolute URL from env so it works in server context
-  const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000"
-  fetch(`${baseUrl}/api/ai/evaluate`, {
+  fetch(`${getBaseUrl()}/api/ai/evaluate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ideaId }),
@@ -109,8 +109,7 @@ export async function reassessIdeaAction(ideaId: string, formData: FormData) {
     return { error: "Failed to update idea. Please try again." }
   }
 
-  const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000"
-  fetch(`${baseUrl}/api/ai/evaluate`, {
+  fetch(`${getBaseUrl()}/api/ai/evaluate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ideaId }),
