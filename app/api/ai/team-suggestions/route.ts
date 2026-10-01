@@ -3,6 +3,7 @@ import { getIdeaById } from "@/lib/db/ideas"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import Groq from "groq-sdk"
 import { auth } from "@/auth"
+import { GROQ_CANDIDATE_MODELS } from "@/lib/ai/evaluate"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -94,21 +95,39 @@ async function suggestWithGemini(idea: Parameters<typeof buildPrompt>[0], existi
 async function suggestWithGroq(idea: Parameters<typeof buildPrompt>[0], existingRoles: string[], singleRole: boolean): Promise<TeamSuggestion | null> {
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) return null
-  try {
-    const groq = new Groq({ apiKey })
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [{ role: "user", content: buildPrompt(idea, existingRoles, singleRole) }],
-      temperature: 0.4,
-      max_tokens: 1200,
-    })
-    const text = (completion.choices[0]?.message?.content ?? "").trim()
-      .replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
-    return JSON.parse(text) as TeamSuggestion
-  } catch (err) {
-    console.warn("[team-suggestions/Groq] failed:", err)
-    return null
+
+  const groq = new Groq({ apiKey })
+  const prompt = buildPrompt(idea, existingRoles, singleRole)
+  const models = [
+    process.env.GROQ_MODEL,
+    ...GROQ_CANDIDATE_MODELS,
+  ].filter((m): m is string => Boolean(m && m.trim()))
+
+  const tried = new Set<string>()
+
+  for (const model of models) {
+    if (tried.has(model)) continue
+    tried.add(model)
+    try {
+      const completion = await groq.chat.completions.create({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.4,
+        max_tokens: 1200,
+        response_format: { type: "json_object" },
+      })
+      const text = (completion.choices[0]?.message?.content ?? "").trim()
+        .replace(/```json\n?/gi, "").replace(/```\n?/g, "").trim()
+      const parsed = JSON.parse(text) as TeamSuggestion
+      if (parsed && Array.isArray(parsed.recommended_roles)) {
+        return parsed
+      }
+    } catch (err) {
+      console.warn(`[team-suggestions/Groq] Model ${model} failed, trying next candidate:`, err instanceof Error ? err.message : err)
+    }
   }
+
+  return null
 }
 
 // ── Rule-based fallback ───────────────────────────────────────────────────────

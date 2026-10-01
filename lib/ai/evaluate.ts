@@ -70,17 +70,65 @@ function computeVentureScore(report: Omit<EvaluationReport, "ventureScore" | "mo
   return Math.round(Math.max(0, Math.min(100, raw)))
 }
 
-// ── Gemini: Market Potential ──────────────────────────────────────────────────
+// ── Shared Helpers ────────────────────────────────────────────────────────────
 
-async function analyzeMarketWithGemini(idea: IdeaContext): Promise<MarketPotential | null> {
-  const apiKey = process.env.GEMINI_API_KEY
+export const GROQ_CANDIDATE_MODELS = [
+  "qwen/qwen3.8-27b",
+  "openai/gpt-oss-120b",
+  "llama-3.3-70b-versatile",
+  "llama-3.1-8b-instant",
+]
+
+function parseJsonSafe<T>(text: string): T | null {
+  try {
+    const cleaned = text.replace(/```json\n?/gi, "").replace(/```\n?/g, "").trim()
+    return JSON.parse(cleaned) as T
+  } catch (err) {
+    console.warn("[AI] Failed to parse JSON response:", err)
+    return null
+  }
+}
+
+async function callGroqWithFallback(
+  prompt: string,
+  maxTokens = 1200
+): Promise<{ content: string; model: string } | null> {
+  const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) return null
 
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+  const groq = new Groq({ apiKey })
+  const models = [
+    process.env.GROQ_MODEL,
+    ...GROQ_CANDIDATE_MODELS,
+  ].filter((m): m is string => Boolean(m && m.trim()))
 
-    const prompt = `You are an Indian startup market analyst with deep knowledge of the Indian economy. Analyze the market potential of the following startup idea STRICTLY for the Indian market. Use India-specific data, real Indian consumer behavior, and India-centric growth trends. Do NOT provide global or generic answers.
+  const tried = new Set<string>()
+
+  for (const model of models) {
+    if (tried.has(model)) continue
+    tried.add(model)
+    try {
+      const completion = await groq.chat.completions.create({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.4,
+        max_tokens: maxTokens,
+        response_format: { type: "json_object" },
+      })
+      const text = completion.choices[0]?.message?.content?.trim() ?? ""
+      if (text) {
+        return { content: text, model }
+      }
+    } catch (err) {
+      console.warn(`[AI/Groq] Model ${model} failed, trying next candidate:`, err instanceof Error ? err.message : err)
+    }
+  }
+
+  return null
+}
+
+function getMarketPrompt(idea: IdeaContext): string {
+  return `You are an Indian startup market analyst with deep knowledge of the Indian economy. Analyze the market potential of the following startup idea STRICTLY for the Indian market. Use India-specific data, real Indian consumer behavior, and India-centric growth trends. Do NOT provide global or generic answers.
 
 Startup: "${idea.title}"
 Problem: "${idea.problemStatement || idea.description}"
@@ -105,32 +153,71 @@ Respond with this exact JSON structure (no markdown, no explanation):
   "customerNeedLevel": "1 sentence on urgency of customer need specifically in India",
   "score": number between 0 and 100
 }`
+}
 
-    const result = await model.generateContent(prompt)
+// ── Gemini: Market Potential ──────────────────────────────────────────────────
+
+async function analyzeMarketWithGemini(idea: IdeaContext): Promise<MarketPotential | null> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return null
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey)
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+    const result = await model.generateContent(getMarketPrompt(idea))
     const text = result.response.text().trim()
-    const jsonText = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
-    return JSON.parse(jsonText) as MarketPotential
+    return parseJsonSafe<MarketPotential>(text)
   } catch (err) {
     console.warn("[AI/Gemini] Market analysis failed:", err)
     return null
   }
 }
 
+// ── Groq: Market Potential Fallback ──────────────────────────────────────────
+
+async function analyzeMarketWithGroq(idea: IdeaContext): Promise<{ data: MarketPotential; model: string } | null> {
+  const prompt = getMarketPrompt(idea)
+  const res = await callGroqWithFallback(prompt, 600)
+  if (!res) return null
+
+  const parsed = parseJsonSafe<MarketPotential>(res.content)
+  if (!parsed || typeof parsed.score !== "number" || !parsed.tam) {
+    return null
+  }
+  return { data: parsed, model: res.model }
+}
+
+async function analyzeMarket(idea: IdeaContext): Promise<{ data: MarketPotential; model: string } | null> {
+  // 1. Try Gemini first if key is present
+  const geminiResult = await analyzeMarketWithGemini(idea)
+  if (geminiResult) {
+    return { data: geminiResult, model: "Gemini 1.5 Flash" }
+  }
+
+  // 2. Fall back to Groq if Gemini is absent or fails
+  const groqResult = await analyzeMarketWithGroq(idea)
+  if (groqResult) {
+    return { data: groqResult.data, model: `Groq (${groqResult.model})` }
+  }
+
+  return null
+}
+
 // ── Groq: Competition + Risk ──────────────────────────────────────────────────
 
 async function analyzeCompetitionWithGroq(idea: IdeaContext): Promise<{
-  competition: CompetitionAnalysis
-  risks: RiskFactors
-  suggestions: string[]
-  feasibility: FeasibilityAnalysis
+  data: {
+    competition: CompetitionAnalysis
+    risks: RiskFactors
+    suggestions: string[]
+    feasibility: FeasibilityAnalysis
+  }
+  model: string
 } | null> {
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) return null
 
-  try {
-    const groq = new Groq({ apiKey })
-
-    const prompt = `You are an Indian startup investment analyst with expertise in the Indian ecosystem. Analyze competition, risks, feasibility, and improvements for this startup idea STRICTLY within the Indian market context. Do NOT suggest global companies as primary competitors — focus on Indian startups and local players.
+  const prompt = `You are an Indian startup investment analyst with expertise in the Indian ecosystem. Analyze competition, risks, feasibility, and improvements for this startup idea STRICTLY within the Indian market context. Do NOT suggest global companies as primary competitors — focus on Indian startups and local players.
 
 Startup: "${idea.title}"
 Problem: "${idea.problemStatement || idea.description}"
@@ -168,20 +255,21 @@ Respond with this exact JSON (no markdown):
   "suggestions": ["max 5 actionable suggestions tailored for Indian market entry and growth"]
 }`
 
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.4,
-      max_tokens: 1200,
-    })
+  const res = await callGroqWithFallback(prompt, 1400)
+  if (!res) return null
 
-    const text = completion.choices[0]?.message?.content?.trim() ?? ""
-    const jsonText = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
-    return JSON.parse(jsonText)
-  } catch (err) {
-    console.warn("[AI/Groq] Competition/risk analysis failed:", err)
+  const parsed = parseJsonSafe<{
+    competition: CompetitionAnalysis
+    risks: RiskFactors
+    feasibility: FeasibilityAnalysis
+    suggestions: string[]
+  }>(res.content)
+
+  if (!parsed || !parsed.competition || !parsed.risks || !parsed.feasibility) {
     return null
   }
+
+  return { data: parsed, model: res.model }
 }
 
 // ── Rule-Based Fallback ────────────────────────────────────────────────────────
@@ -283,25 +371,26 @@ export interface IdeaContext {
 // ── Main Evaluation Function ──────────────────────────────────────────────────
 
 export async function evaluateIdea(idea: IdeaContext): Promise<EvaluationReport> {
-  // Run both API calls in parallel
+  // Run both analysis pipelines in parallel
   const [marketResult, groqResult] = await Promise.all([
-    analyzeMarketWithGemini(idea),
+    analyzeMarket(idea),
     analyzeCompetitionWithGroq(idea),
   ])
 
   const fallback = ruleBased(idea)
-  const modelUsed: string[] = []
+  const modelsUsed: string[] = []
 
-  const marketPotential = marketResult ?? fallback.marketPotential
-  if (marketResult) modelUsed.push("Gemini 1.5 Flash")
+  const marketPotential = marketResult?.data ?? fallback.marketPotential
+  if (marketResult) modelsUsed.push(marketResult.model)
 
-  const competition  = groqResult?.competition  ?? fallback.competition
-  const risks        = groqResult?.risks        ?? fallback.risks
-  const feasibility  = groqResult?.feasibility  ?? fallback.feasibility
-  const suggestions  = groqResult?.suggestions  ?? fallback.suggestions
-  if (groqResult) modelUsed.push("Groq Llama-3.3-70b")
+  const competition  = groqResult?.data.competition  ?? fallback.competition
+  const risks        = groqResult?.data.risks        ?? fallback.risks
+  const feasibility  = groqResult?.data.feasibility  ?? fallback.feasibility
+  const suggestions  = groqResult?.data.suggestions  ?? fallback.suggestions
+  if (groqResult) modelsUsed.push(`Groq (${groqResult.model})`)
 
-  if (modelUsed.length === 0) modelUsed.push("Rule-based engine")
+  const uniqueModels = Array.from(new Set(modelsUsed))
+  const modelUsedString = uniqueModels.length > 0 ? uniqueModels.join(" + ") : "Rule-based engine"
 
   const report: Omit<EvaluationReport, "ventureScore" | "modelUsed"> = {
     marketPotential,
@@ -314,6 +403,6 @@ export async function evaluateIdea(idea: IdeaContext): Promise<EvaluationReport>
   return {
     ...report,
     ventureScore: computeVentureScore(report),
-    modelUsed: modelUsed.join(" + "),
+    modelUsed: modelUsedString,
   }
 }
