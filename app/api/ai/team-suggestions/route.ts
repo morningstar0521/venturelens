@@ -196,6 +196,8 @@ function ruleBased(idea: Parameters<typeof buildPrompt>[0], existingRoles: strin
 
 // ── Route handler ─────────────────────────────────────────────────────────────
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: NextRequest) {
   try {
     const { ideaId, existingRoles = [], singleRole = false } = await req.json()

@@ -5,8 +5,13 @@ import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
 import { initRolesDb } from "@/lib/db/roles"
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
+    // ── users: track last navigation path ────────────────────────────────────
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_path TEXT`
+
     // ── ideas: new rich submission fields ────────────────────────────────────
     await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS problem_statement TEXT`
     await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS solution TEXT`

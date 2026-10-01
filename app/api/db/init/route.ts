@@ -6,6 +6,8 @@ import { initDb } from "@/lib/db/users"
 import { initIdeasDb } from "@/lib/db/ideas"
 import { initApplicationsDb } from "@/lib/db/applications"
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     await initDb()

@@ -31,6 +31,7 @@ export async function initDb() {
       skills TEXT[],
       experience VARCHAR(50),
       is_active BOOLEAN DEFAULT TRUE,
+      last_active_path TEXT,
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `

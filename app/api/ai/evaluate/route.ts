@@ -6,6 +6,8 @@ import { evaluateIdea } from "@/lib/ai/evaluate"
 import { getIdeaById, updateIdeaReport } from "@/lib/db/ideas"
 import { IdeaStatus } from "@/lib/db/ideas"
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: NextRequest) {
   try {
     const { ideaId } = await req.json()

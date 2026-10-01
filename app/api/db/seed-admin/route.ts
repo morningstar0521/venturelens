@@ -5,6 +5,8 @@ import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { getUserByEmail, createUser } from "@/lib/db/users"
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const email    = process.env.ADMIN_EMAIL    ?? "admin@venturelens.ai"
