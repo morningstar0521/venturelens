@@ -487,8 +487,8 @@ Summary of implemented protections and roadmap items:
 ### 1 · Clone & install
 
 ```bash
-git clone https://github.com/magardeyash/minorproject.git
-cd minorproject
+git clone https://github.com/morningstar0521/VentureLens.git
+cd VentureLens
 npm install
 ```
 
