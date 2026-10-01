@@ -20,7 +20,7 @@
 
 <br />
 
-[Features](#-features) · [Quick Start](#-quick-start) · [Architecture](#-architecture) · [AI Engine](#-the-ai-evaluation-engine) · [Deployment](#%EF%B8%8F-deployment)
+[Features](#features) · [Quick Start](#quick-start) · [Architecture](#architecture) · [AI Engine](#the-ai-evaluation-engine) · [Deployment](#deployment)
 
 </div>
 
@@ -38,32 +38,32 @@ Most Indian founders spend months building before discovering that their idea do
 
 ---
 
-## ✨ Features
+## Features
 
 <table>
 <tr>
 <td width="50%" valign="top">
 
 ### For Founders
-- 🎯 **AI Venture Report**: Composite score (0-100) across Market, Competition, Feasibility, Risk & Innovation
-- 🇮🇳 **India Market Lens**: TAM in INR, Indian competitors, UPI/wallet/COD analysis, Startup India context
-- ⚠️ **Risk Radar**: Execution, funding, market & legal risk flags with India-specific rationale
-- 🔄 **Edit & Reassess**: Improve locked ideas (score < 70) and trigger a fresh AI evaluation
-- 👥 **AI Team Builder**: AI-suggested roles with category, priority, experience level & required skills
-- 📋 **Applicant Management**: Review, shortlist & build your founding team
+- **AI Venture Report**: Composite score (0-100) across Market, Competition, Feasibility, Risk & Innovation
+- **India Market Lens**: TAM in INR, Indian competitors, UPI/wallet/COD analysis, Startup India context
+- **Risk Radar**: Execution, funding, market & legal risk flags with India-specific rationale
+- **Edit & Reassess**: Improve locked ideas (score < 70) and trigger a fresh AI evaluation
+- **AI Team Builder**: AI-suggested roles with category, priority, experience level & required skills
+- **Applicant Management**: Review, shortlist & build your founding team
 
 </td>
 <td width="50%" valign="top">
 
 ### For Contributors
-- 🔍 **Browse Validated Ideas**: Only approved ideas (score ≥ 70) with posted roles are visible
-- 📝 **Structured Applications**: 3-question questionnaire + optional resume upload per role
-- 📊 **Application Tracking**: View current application statuses (updated on page load)
+- **Browse Validated Ideas**: Only approved ideas (score ≥ 70) with posted roles are visible
+- **Structured Applications**: 3-question questionnaire + optional resume upload per role
+- **Application Tracking**: View current application statuses (updated on page load)
 
 ### For Admins
-- 📈 **Platform Overview**: Dashboard with user and idea counts, computed at page render
-- 👤 **User Management**: Activate or suspend user accounts
-- 🗂️ **Idea Moderation**: Expandable row table to review and approve/reject ideas
+- **Platform Overview**: Dashboard with user and idea counts, computed at page render
+- **User Management**: Activate or suspend user accounts
+- **Idea Moderation**: Expandable row table to review and approve/reject ideas
 
 </td>
 </tr>
@@ -71,7 +71,7 @@ Most Indian founders spend months building before discovering that their idea do
 
 ---
 
-## 🔁 Application Workflow
+## Application Workflow
 
 ```mermaid
 flowchart TD
@@ -113,7 +113,7 @@ flowchart TD
 
 ---
 
-## 🧠 The AI Evaluation Engine
+## The AI Evaluation Engine
 
 The core intelligence lives in [`lib/ai/evaluate.ts`](lib/ai/evaluate.ts).
 
@@ -194,7 +194,7 @@ The complete report is stored as a **JSONB column** (`ai_report`) on the `ideas`
 
 ---
 
-## 👥 Team Matching Mechanism
+## Team Matching Mechanism
 
 Team matching connects founders with contributors through a score-gated, role-based workflow:
 
@@ -215,7 +215,7 @@ Team matching connects founders with contributors through a score-gated, role-ba
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 graph TB
@@ -271,7 +271,7 @@ graph TB
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Layer | Technology |
 | --- | --- |
@@ -288,7 +288,7 @@ graph TB
 
 ---
 
-## 🗄️ Database Architecture
+## Database Architecture
 
 VentureLens uses raw SQL against Neon Postgres. The data layer lives in `lib/db/` with typed query modules for each table. All queries use parameterized tagged template literals - no string concatenation.
 
@@ -336,7 +336,7 @@ An alternative CLI migration is available via `npm run migrate` (`scripts/migrat
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 VentureLens/
@@ -393,7 +393,7 @@ VentureLens/
 
 ---
 
-## 🔌 API Reference
+## API Reference
 
 | Method | Route | Authentication | Description |
 | --- | --- | --- | --- |
@@ -408,7 +408,7 @@ VentureLens/
 
 ---
 
-## 🔐 Authentication & Security
+## Authentication & Security
 
 ### Authentication
 
@@ -434,9 +434,9 @@ Authorization is applied at multiple layers, but **not uniformly across all rout
 **3. Server Actions** (`actions/*.ts`)
 - Every Server Action calls `auth()` to validate the JWT session and checks `session.user.role` before executing.
 - **Ownership checks are applied inconsistently:**
-  - `submitIdeaAction`, `reassessIdeaAction`: verify `idea.founder_id === session.user.id` ✅
-  - `saveRoleRequirementsAction`: verifies idea ownership ✅
-  - `cancelApplicationAction`: verifies `employee_id` matches ✅
+  - `submitIdeaAction`, `reassessIdeaAction`: verify `idea.founder_id === session.user.id` (enforced)
+  - `saveRoleRequirementsAction`: verifies idea ownership (enforced)
+  - `cancelApplicationAction`: verifies `employee_id` matches (enforced)
   - `updateApplicationStatusAction`, `shortlistApplicationAction`, `assignRoleAction`: check founder role but do **not** verify the application belongs to the founder's own idea
   - `deleteRoleAction`: checks founder role but does **not** verify the role belongs to the founder's own idea
 
@@ -467,7 +467,7 @@ These are known limitations appropriate for the project's current stage:
 
 ---
 
-## ⚙️ Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -531,7 +531,7 @@ npm run migrate    # runs scripts/migrate.mjs against DATABASE_URL from .env
 
 ---
 
-## 🔑 Environment Variables
+## Environment Variables
 
 | Variable | Required | Description |
 | --- | :---: | --- |
@@ -545,7 +545,7 @@ npm run migrate    # runs scripts/migrate.mjs against DATABASE_URL from .env
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 <details>
 <summary><b>Common issues and solutions</b></summary>
@@ -566,7 +566,7 @@ npm run migrate    # runs scripts/migrate.mjs against DATABASE_URL from .env
 
 ---
 
-## ☁️ Deployment
+## Deployment
 
 ### Vercel
 
@@ -601,7 +601,7 @@ npm start
 
 ---
 
-## 🔮 Future Scope
+## Future Scope
 
 These improvements are not currently implemented:
 
@@ -616,7 +616,7 @@ These improvements are not currently implemented:
 
 ---
 
-## 📜 License
+## License
 
 Licensed under the [MIT License](./LICENSE).
 
