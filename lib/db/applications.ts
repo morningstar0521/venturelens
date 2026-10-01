@@ -87,6 +87,13 @@ export async function getApplicationsForFounder(founderIdeas: string[]): Promise
   return rows as DbApplication[]
 }
 
+export async function getApplicationById(id: string): Promise<DbApplication | null> {
+  const rows = await sql`
+    SELECT * FROM applications WHERE id = ${id} LIMIT 1
+  `
+  return (rows[0] as DbApplication) ?? null
+}
+
 export async function updateApplicationStatus(id: string, status: ApplicationStatus): Promise<void> {
   await sql`
     UPDATE applications SET status = ${status} WHERE id = ${id}

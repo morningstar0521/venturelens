@@ -397,14 +397,14 @@ VentureLens/
 
 | Method | Route | Authentication | Description |
 | --- | --- | --- | --- |
-| `GET` | `/api/db/init` | **None** | Creates `users`, `ideas`, `applications` tables |
-| `GET` | `/api/db/migrate` | **None** | Runs idempotent schema migrations (columns, tables, constraints) |
-| `GET` | `/api/db/seed-admin` | **None** | Seeds admin user with bcrypt-hashed password. Skips if exists |
-| `POST` | `/api/ai/evaluate` | **None** | `{ ideaId }` → runs evaluation pipeline → persists report + score + status. Validates ideaId exists but does not verify caller identity |
-| `POST` | `/api/ai/team-suggestions` | **None** | `{ ideaId, existingRoles?, singleRole? }` → suggests team structure. Returns **403** if `venture_score < 70`. Validates ideaId but does not verify caller identity |
+| `GET` | `/api/db/init` | **Admin or Secret** | Creates `users`, `ideas`, `applications`, `role_requirements` tables. Requires admin session or `x-setup-secret` / `?secret=` |
+| `GET` | `/api/db/migrate` | **Admin or Secret** | Runs idempotent schema migrations (columns, tables, constraints). Requires admin session or secret |
+| `GET` | `/api/db/seed-admin` | **Admin or Secret** | Seeds admin user. Requires admin session or secret; requires explicit credentials in production |
+| `POST` | `/api/ai/evaluate` | **Internal Bearer / Owner** | `{ ideaId }` → runs evaluation pipeline → persists report + score + status. Verified via internal secret or idea owner |
+| `POST` | `/api/ai/team-suggestions` | **Founder Owner** | `{ ideaId, existingRoles?, singleRole? }` → suggests team structure. Verified founder ownership + score ≥ 70 |
 | `*` | `/api/auth/[...nextauth]` | Managed by Auth.js | NextAuth session management route handler |
 
-> **Note on API security:** All API routes are excluded from the authentication middleware (the middleware matcher explicitly skips `/api/*`). The AI routes are designed to be called from authenticated Server Actions via internal `fetch()`, not from the browser directly. The bootstrap routes (`/api/db/*`) are intentionally public for one-time setup and should be removed or protected before any public deployment.
+> **Note on API security:** API routes enforce dedicated security guards. Bootstrap routes (`/api/db/*`) require an active admin session or a shared secret (`x-setup-secret` header or `?secret=` query parameter). The AI evaluation route requires an internal service authorization token or founder ownership, and the team-suggestions route strictly enforces founder ownership of the target idea.
 
 ---
 
@@ -433,20 +433,23 @@ Authorization is applied at multiple layers, but **not uniformly across all rout
 
 **3. Server Actions** (`actions/*.ts`)
 - Every Server Action calls `auth()` to validate the JWT session and checks `session.user.role` before executing.
-- **Ownership checks are applied inconsistently:**
+- **Resource ownership checks:**
   - `submitIdeaAction`, `reassessIdeaAction`: verify `idea.founder_id === session.user.id` (enforced)
   - `saveRoleRequirementsAction`: verifies idea ownership (enforced)
+  - `deleteRoleAction`: verifies idea ownership before deletion (enforced)
+  - `updateApplicationStatusAction`, `shortlistApplicationAction`, `assignRoleAction`: fetch the application and verify the target idea belongs to `session.user.id` (enforced)
   - `cancelApplicationAction`: verifies `employee_id` matches (enforced)
-  - `updateApplicationStatusAction`, `shortlistApplicationAction`, `assignRoleAction`: check founder role but do **not** verify the application belongs to the founder's own idea
-  - `deleteRoleAction`: checks founder role but does **not** verify the role belongs to the founder's own idea
 
 **4. API routes** (`app/api/*`)
-- **No authentication.** API routes do not call `auth()`. They validate input (e.g., ideaId existence) and enforce business rules (e.g., score ≥ 70 for team suggestions), but do not verify who is making the request.
+- **Bootstrap endpoints** (`/api/db/*`): Protected via `verifyBootstrapAccess()` requiring an active admin session or a secret key (`x-setup-secret` / `?secret=`).
+- **AI evaluation** (`/api/ai/evaluate`): Requires internal Bearer token (`AUTH_SECRET`) or authenticated idea owner session.
+- **Team suggestions** (`/api/ai/team-suggestions`): Verifies founder authentication, score ≥ 70, and asserts idea ownership.
 
 ### Input Validation
 
 - All user-facing mutations are validated with **Zod schemas** (`lib/validations.ts`) covering login, founder registration, employee registration, idea submission, application messages, and profile updates.
 - Schemas enforce minimum lengths, email format, password complexity (requires uppercase letter + number, minimum 8 characters), and enum constraints.
+- **Resume Upload Validation**: Enforced server-side in `actions/applications.ts` with a strict file size cap (2 MB binary / 3 MB Base64 string) and strict MIME type whitelisting (PDF, DOC, DOCX, TXT).
 
 ### SQL Injection Prevention
 
@@ -454,16 +457,16 @@ Authorization is applied at multiple layers, but **not uniformly across all rout
 
 ### Security Considerations
 
-These are known limitations appropriate for the project's current stage:
+Summary of implemented protections and roadmap items:
 
-| Gap | Detail |
+| Area | Current Implementation |
 | --- | --- |
-| **Unprotected bootstrap endpoints** | `/api/db/init`, `/api/db/migrate`, `/api/db/seed-admin` are public GET endpoints. Designed for one-time setup - should be removed or access-restricted before public deployment |
-| **Unauthenticated AI routes** | `/api/ai/evaluate` and `/api/ai/team-suggestions` do not verify caller identity. An attacker knowing a valid ideaId could trigger evaluations or retrieve team suggestions |
-| **Incomplete ownership checks** | Some founder Server Actions verify role but not resource ownership - a founder could potentially act on another founder's applications or roles |
-| **Default admin credentials** | `admin@venturelens.ai` / `Admin@VL2024!` hardcoded as fallback defaults. Overridable via environment variables |
-| **Client-only resume size limit** | The 2 MB file size check is enforced only in the browser (`ApplicationForm.tsx`). The Server Action has no server-side size validation |
-| **Base64 resume storage** | Entire file contents stored as Base64 in a TEXT column. Functional but not scalable for production volumes |
+| **Bootstrap endpoints** | Protected. `/api/db/init`, `/api/db/migrate`, `/api/db/seed-admin` require admin session or secret (`x-setup-secret` or `?secret=`) |
+| **AI endpoints** | Protected. `/api/ai/evaluate` requires internal authorization token or idea owner; `/api/ai/team-suggestions` enforces founder idea ownership |
+| **Resource ownership checks** | Enforced across all founder and contributor Server Actions (idea edits, role requirements, status updates, shortlists, role assignments) |
+| **Admin credentials** | Default fallbacks disabled in production. Explicit `ADMIN_EMAIL` and strong `ADMIN_PASSWORD` (min 10 chars) required |
+| **Resume file validation** | Enforced server-side: 2 MB limit + MIME type verification (PDF, DOC, DOCX, TXT) |
+| **Resume storage** | Stored in PostgreSQL (Base64) with server validation; object storage bucket integration planned |
 
 ---
 

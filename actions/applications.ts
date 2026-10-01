@@ -1,9 +1,54 @@
 "use server"
 
 import { auth } from "@/auth"
-import { applyToIdea, applyToRole, updateApplicationStatus, updateApplicationRole, shortlistApplication, deleteApplication, ApplicationStatus, AssignedRole } from "@/lib/db/applications"
+import { 
+  applyToIdea, 
+  applyToRole, 
+  updateApplicationStatus, 
+  updateApplicationRole, 
+  shortlistApplication, 
+  deleteApplication, 
+  getApplicationById,
+  ApplicationStatus, 
+  AssignedRole 
+} from "@/lib/db/applications"
+import { getIdeaById } from "@/lib/db/ideas"
 import { ApplicationSchema } from "@/lib/validations"
 import { revalidatePath } from "next/cache"
+
+function validateResume(resumeUrl?: string | null): string | null {
+  if (!resumeUrl || resumeUrl.trim() === "") return null
+
+  // If external URL (e.g. https://... or http://...)
+  if (/^https?:\/\//i.test(resumeUrl)) {
+    if (resumeUrl.length > 2048) {
+      return "Resume URL is too long."
+    }
+    return null
+  }
+
+  // Base64 Data URI check
+  // 1. Size check (~2 MB binary = ~2.8 MB base64 string)
+  const MAX_BASE64_LENGTH = 3 * 1024 * 1024 // 3 MB string limit
+  if (resumeUrl.length > MAX_BASE64_LENGTH) {
+    return "Resume file size exceeds the 2 MB limit."
+  }
+
+  // 2. Allowed document MIME types
+  const allowedPrefixes = [
+    "data:application/pdf;base64,",
+    "data:application/msword;base64,",
+    "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,",
+    "data:text/plain;base64,"
+  ]
+
+  const isAllowedType = allowedPrefixes.some(prefix => resumeUrl.toLowerCase().startsWith(prefix))
+  if (!isAllowedType) {
+    return "Invalid resume format. Only PDF, DOC, DOCX, or TXT files are accepted."
+  }
+
+  return null
+}
 
 export async function applyToIdeaAction(ideaId: string, formData: FormData) {
   const session = await auth()
@@ -14,6 +59,12 @@ export async function applyToIdeaAction(ideaId: string, formData: FormData) {
   const message = formData.get("message") as string
   const resumeUrl = formData.get("resumeUrl") as string
   const questionnaireAnswersRaw = formData.get("questionnaireAnswers") as string
+
+  const resumeError = validateResume(resumeUrl)
+  if (resumeError) {
+    return { error: resumeError }
+  }
+
   let questionnaireAnswers = {}
   try {
     questionnaireAnswers = questionnaireAnswersRaw ? JSON.parse(questionnaireAnswersRaw) : {}
@@ -44,6 +95,14 @@ export async function updateApplicationStatusAction(id: string, status: Applicat
     throw new Error("Unauthorized")
   }
 
+  const app = await getApplicationById(id)
+  if (!app) return { error: "Application not found" }
+
+  const idea = await getIdeaById(app.idea_id)
+  if (!idea || idea.founder_id !== session.user.id) {
+    return { error: "Unauthorized: You do not own the idea for this application" }
+  }
+
   try {
     await updateApplicationStatus(id, status)
     revalidatePath("/dashboard/founder/applicants")
@@ -59,6 +118,14 @@ export async function assignRoleAction(applicationId: string, role: AssignedRole
   const session = await auth()
   if (!session?.user || session.user.role !== "founder") {
     throw new Error("Unauthorized")
+  }
+
+  const app = await getApplicationById(applicationId)
+  if (!app) return { error: "Application not found" }
+
+  const idea = await getIdeaById(app.idea_id)
+  if (!idea || idea.founder_id !== session.user.id) {
+    return { error: "Unauthorized: You do not own the idea for this application" }
   }
 
   try {
@@ -79,6 +146,12 @@ export async function applyToRoleAction(ideaId: string, roleRequirementId: strin
   const message = (formData.get("message") as string) ?? ""
   const resumeUrl = formData.get("resumeUrl") as string
   const questionnaireAnswersRaw = formData.get("questionnaireAnswers") as string
+
+  const resumeError = validateResume(resumeUrl)
+  if (resumeError) {
+    return { error: resumeError }
+  }
+
   let questionnaireAnswers = {}
   try {
     questionnaireAnswers = questionnaireAnswersRaw ? JSON.parse(questionnaireAnswersRaw) : {}
@@ -89,8 +162,8 @@ export async function applyToRoleAction(ideaId: string, roleRequirementId: strin
       ideaId, 
       roleRequirementId, 
       employeeId: session.user.id, 
-      message,
-      resumeUrl,
+      message, 
+      resumeUrl, 
       questionnaireAnswers,
     })
     revalidatePath("/dashboard/employee/applications")
@@ -105,6 +178,15 @@ export async function shortlistApplicationAction(id: string) {
   if (!session?.user || session.user.role !== "founder") {
     throw new Error("Unauthorized")
   }
+
+  const app = await getApplicationById(id)
+  if (!app) return { error: "Application not found" }
+
+  const idea = await getIdeaById(app.idea_id)
+  if (!idea || idea.founder_id !== session.user.id) {
+    return { error: "Unauthorized: You do not own the idea for this application" }
+  }
+
   try {
     await shortlistApplication(id)
     revalidatePath("/dashboard/founder/applicants")
@@ -122,8 +204,9 @@ export async function cancelApplicationAction(applicationId: string) {
 
   const deleted = await deleteApplication(applicationId, session.user.id)
   if (!deleted) {
-    return { error: "Could not cancel — application may already be reviewed." }
+    return { error: "Could not cancel - application may already be reviewed." }
   }
 
   revalidatePath("/dashboard/employee/applications")
 }
+

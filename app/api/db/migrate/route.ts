@@ -1,13 +1,21 @@
 // ─── Idempotent migration endpoint ───────────────────────────────────────────
 // GET /api/db/migrate — adds new columns safely (ADD COLUMN IF NOT EXISTS).
 // Safe to run multiple times.
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db"
 import { initRolesDb } from "@/lib/db/roles"
+import { verifyBootstrapAccess } from "@/lib/auth/bootstrap-guard"
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (!await verifyBootstrapAccess(req)) {
+    return NextResponse.json(
+      { ok: false, error: "Unauthorized. Admin session or valid secret (?secret= or x-setup-secret header) required." },
+      { status: 401 }
+    )
+  }
+
   try {
     // ── users: track last navigation path ────────────────────────────────────
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_path TEXT`

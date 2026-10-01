@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getIdeaById } from "@/lib/db/ideas"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import Groq from "groq-sdk"
+import { auth } from "@/auth"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -205,6 +206,19 @@ export async function POST(req: NextRequest) {
 
     const idea = await getIdeaById(ideaId)
     if (!idea) return NextResponse.json({ error: "Idea not found" }, { status: 404 })
+
+    const session = await auth()
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    if (session.user.role !== "admin" && (session.user.role !== "founder" || idea.founder_id !== session.user.id)) {
+      return NextResponse.json(
+        { error: "Forbidden: You can only generate team suggestions for ideas you created" },
+        { status: 403 }
+      )
+    }
+
     if ((idea.venture_score ?? 0) < 70) {
       return NextResponse.json({ error: "Venture Score must be ≥ 70" }, { status: 403 })
     }

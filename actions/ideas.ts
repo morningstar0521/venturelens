@@ -50,7 +50,10 @@ export async function submitIdeaAction(formData: FormData) {
   // Use absolute URL from env so it works in server context
   fetch(`${getBaseUrl()}/api/ai/evaluate`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(process.env.AUTH_SECRET ? { Authorization: `Bearer ${process.env.AUTH_SECRET}` } : {}),
+    },
     body: JSON.stringify({ ideaId }),
   }).catch((err) => console.error("[submitIdea] AI trigger failed:", err))
 
@@ -111,7 +114,10 @@ export async function reassessIdeaAction(ideaId: string, formData: FormData) {
 
   fetch(`${getBaseUrl()}/api/ai/evaluate`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(process.env.AUTH_SECRET ? { Authorization: `Bearer ${process.env.AUTH_SECRET}` } : {}),
+    },
     body: JSON.stringify({ ideaId }),
   }).catch((err) => console.error("[reassessIdea] AI trigger failed:", err))
 

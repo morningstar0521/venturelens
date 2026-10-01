@@ -56,6 +56,12 @@ export async function deleteRoleAction(roleId: string, ideaId: string) {
     return { error: "Unauthorized" }
   }
 
+  // Verify idea ownership
+  const idea = await getIdeaById(ideaId)
+  if (!idea || idea.founder_id !== session.user.id) {
+    return { error: "Unauthorized: You do not own this idea" }
+  }
+
   try {
     await initRolesDb()
     await deleteRole(roleId)

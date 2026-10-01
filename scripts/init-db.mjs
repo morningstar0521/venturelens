@@ -111,21 +111,28 @@ async function initDatabase() {
     console.log("✓ 'applications' table ready.");
 
     // 5. Seed admin user
-    const adminEmail = process.env.ADMIN_EMAIL ?? "admin@venturelens.ai";
-    const adminPassword = process.env.ADMIN_PASSWORD ?? "Admin@VL2024!";
+    const isProd = process.env.NODE_ENV === "production";
+    const adminEmail = process.env.ADMIN_EMAIL ?? (!isProd ? "admin@venturelens.ai" : "");
+    const adminPassword = process.env.ADMIN_PASSWORD ?? (!isProd ? "Admin@VL2024!" : "");
     const adminName = "Admin";
 
-    const existingAdmin = await sql`SELECT id FROM users WHERE email = ${adminEmail} LIMIT 1`;
-    if (existingAdmin.length > 0) {
-      console.log(`ℹ Admin user (${adminEmail}) already exists.`);
+    if (!adminEmail || !adminPassword) {
+      console.warn("⚠️ ADMIN_EMAIL and ADMIN_PASSWORD must be set to seed admin. Skipping admin seeding.");
+    } else if (isProd && (adminPassword === "Admin@VL2024!" || adminPassword.length < 10)) {
+      console.warn("⚠️ Production warning: Default or short ADMIN_PASSWORD detected. Skipping default admin seeding for safety.");
     } else {
-      console.log(`Creating default admin user (${adminEmail})...`);
-      const hash = await bcrypt.hash(adminPassword, 12);
-      await sql`
-        INSERT INTO users (name, email, password_hash, role)
-        VALUES (${adminName}, ${adminEmail}, ${hash}, 'admin')
-      `;
-      console.log(`✓ Admin user created successfully (${adminEmail}).`);
+      const existingAdmin = await sql`SELECT id FROM users WHERE email = ${adminEmail} LIMIT 1`;
+      if (existingAdmin.length > 0) {
+        console.log(`ℹ Admin user (${adminEmail}) already exists.`);
+      } else {
+        console.log(`Creating admin user (${adminEmail})...`);
+        const hash = await bcrypt.hash(adminPassword, 12);
+        await sql`
+          INSERT INTO users (name, email, password_hash, role)
+          VALUES (${adminName}, ${adminEmail}, ${hash}, 'admin')
+        `;
+        console.log(`✓ Admin user created successfully (${adminEmail}).`);
+      }
     }
 
     console.log("\n🎉 Database initialization and schema migration completed successfully!");

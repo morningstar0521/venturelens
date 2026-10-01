@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { evaluateIdea } from "@/lib/ai/evaluate"
 import { getIdeaById, updateIdeaReport } from "@/lib/db/ideas"
 import { IdeaStatus } from "@/lib/db/ideas"
+import { auth } from "@/auth"
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +19,27 @@ export async function POST(req: NextRequest) {
     const idea = await getIdeaById(ideaId)
     if (!idea) {
       return NextResponse.json({ ok: false, error: "Idea not found" }, { status: 404 })
+    }
+
+    // Verify caller: either internal service with Bearer AUTH_SECRET or idea owner / admin session
+    const authHeader = req.headers.get("authorization")
+    const internalToken = process.env.AUTH_SECRET ? `Bearer ${process.env.AUTH_SECRET}` : null
+    const isInternalAuthorized = Boolean(internalToken && authHeader === internalToken)
+
+    let isUserAuthorized = false
+    if (!isInternalAuthorized) {
+      try {
+        const session = await auth()
+        if (session?.user && (session.user.id === idea.founder_id || session.user.role === "admin")) {
+          isUserAuthorized = true
+        }
+      } catch {
+        // Session lookup failed
+      }
+    }
+
+    if (!isInternalAuthorized && !isUserAuthorized) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 })
     }
 
     // Run the AI evaluation pipeline
