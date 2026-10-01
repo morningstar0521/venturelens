@@ -209,7 +209,7 @@ Team matching connects founders with contributors through a score-gated, role-ba
    - An optional cover message
    - An optional resume upload (PDF/DOCX, max 2 MB client-side check)
 
-5. **Resume handling**: Resumes are read client-side using `FileReader.readAsDataURL()`, producing a **Base64 data URI string**. This string is sent via the Server Action and stored in the `resume_url` TEXT column of the `applications` table. There is no external file storage service - the entire file content lives in the database as a Base64-encoded string.
+5. **Resume handling**: Resumes are uploaded through Server Actions directly to **Neon S3 Object Storage** (`resume-venturelens-01`). The storage URI is persisted in the `resume_url` column of the `applications` table, and founders access resumes securely via time-limited presigned GET URLs generated on the server. If storage credentials are not provided, it falls back to database storage with strict server-side 2 MB validation.
 
 6. **Application lifecycle**: Applications progress through statuses: `pending` → `shortlisted` → `accepted` / `rejected`. Founders review applicants grouped by role. Contributors can cancel their own `pending` applications (enforced by `deleteApplication` checking both `id` and `employee_id`). The unique constraint `(idea_id, employee_id, role_requirement_id)` prevents duplicate applications to the same role.
 
@@ -466,7 +466,7 @@ Summary of implemented protections and roadmap items:
 | **Resource ownership checks** | Enforced across all founder and contributor Server Actions (idea edits, role requirements, status updates, shortlists, role assignments) |
 | **Admin credentials** | Default fallbacks disabled in production. Explicit `ADMIN_EMAIL` and strong `ADMIN_PASSWORD` (min 10 chars) required |
 | **Resume file validation** | Enforced server-side: 2 MB limit + MIME type verification (PDF, DOC, DOCX, TXT) |
-| **Resume storage** | Stored in PostgreSQL (Base64) with server validation; object storage bucket integration planned |
+| **Resume storage** | Stored in **Neon S3 Object Storage** (`resume-venturelens-01`) with secure presigned GET URLs |
 
 ---
 

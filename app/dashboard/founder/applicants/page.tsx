@@ -3,6 +3,7 @@ import { getIdeasByFounder } from "@/lib/db/ideas"
 import { getApplicationsForIdea } from "@/lib/db/applications"
 import { getRolesByIdea } from "@/lib/db/roles"
 import { getUserById } from "@/lib/db/users"
+import { resolveResumeUrl } from "@/lib/storage"
 import { StatusBadge } from "@/components/dashboard/StatusBadge"
 import {
   updateApplicationStatusAction,
@@ -62,7 +63,8 @@ export default async function FounderApplicantsPage({
     for (const app of apps) {
       const user = await getUserById(app.employee_id)
       const roleName = app.role_requirement_id ? (roleMap[app.role_requirement_id]?.role_title ?? null) : null
-      allApps.push({ ...app, user, ideaTitle: idea.title, ideaScore: idea.venture_score, roleName })
+      const resolvedResume = await resolveResumeUrl(app.resume_url)
+      allApps.push({ ...app, resume_url: resolvedResume ?? app.resume_url, user, ideaTitle: idea.title, ideaScore: idea.venture_score, roleName })
     }
   }
   allApps.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())

@@ -15,6 +15,7 @@ import {
 import { getIdeaById } from "@/lib/db/ideas"
 import { ApplicationSchema } from "@/lib/validations"
 import { revalidatePath } from "next/cache"
+import { uploadResumeToObjectStorage, isStorageConfigured } from "@/lib/storage"
 
 function validateResume(resumeUrl?: string | null): string | null {
   if (!resumeUrl || resumeUrl.trim() === "") return null
@@ -65,6 +66,17 @@ export async function applyToIdeaAction(ideaId: string, formData: FormData) {
     return { error: resumeError }
   }
 
+  let storedResumeUrl = resumeUrl
+  if (resumeUrl && isStorageConfigured()) {
+    try {
+      storedResumeUrl = await uploadResumeToObjectStorage(resumeUrl, {
+        employeeId: session.user.id,
+      })
+    } catch (err) {
+      console.error("[applyToIdeaAction] Object storage upload failed, saving fallback:", err)
+    }
+  }
+
   let questionnaireAnswers = {}
   try {
     questionnaireAnswers = questionnaireAnswersRaw ? JSON.parse(questionnaireAnswersRaw) : {}
@@ -75,7 +87,7 @@ export async function applyToIdeaAction(ideaId: string, formData: FormData) {
       ideaId,
       employeeId: session.user.id,
       message,
-      resumeUrl,
+      resumeUrl: storedResumeUrl,
       questionnaireAnswers,
     })
     revalidatePath("/dashboard/employee/applications")
@@ -152,6 +164,17 @@ export async function applyToRoleAction(ideaId: string, roleRequirementId: strin
     return { error: resumeError }
   }
 
+  let storedResumeUrl = resumeUrl
+  if (resumeUrl && isStorageConfigured()) {
+    try {
+      storedResumeUrl = await uploadResumeToObjectStorage(resumeUrl, {
+        employeeId: session.user.id,
+      })
+    } catch (err) {
+      console.error("[applyToRoleAction] Object storage upload failed, saving fallback:", err)
+    }
+  }
+
   let questionnaireAnswers = {}
   try {
     questionnaireAnswers = questionnaireAnswersRaw ? JSON.parse(questionnaireAnswersRaw) : {}
@@ -163,7 +186,7 @@ export async function applyToRoleAction(ideaId: string, roleRequirementId: strin
       roleRequirementId, 
       employeeId: session.user.id, 
       message, 
-      resumeUrl, 
+      resumeUrl: storedResumeUrl, 
       questionnaireAnswers,
     })
     revalidatePath("/dashboard/employee/applications")
