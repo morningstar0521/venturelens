@@ -6,7 +6,7 @@
 
 ### AI-Powered Startup Validation & Team Matching for Indian Founders
 
-> *Turn a rough startup idea into a decision-ready venture report — then find the people to build it.*
+> *Turn a rough startup idea into a decision-ready venture report - then find the people to build it.*
 
 <br />
 
@@ -32,8 +32,8 @@
 
 Most Indian founders spend months building before discovering that their idea doesn't fit the local market, or they can't find the right co-founders. **VentureLens inverts that cycle:**
 
-1. **Validate before you build.** An AI engine scores your idea against real Indian-market signals — TAM in ₹, local competitors, UPI/COD behaviour, government schemes, tier-2/3 adoption — *before* you commit.
-2. **Only serious ideas get talent.** A Venture Score of **70+** unlocks contributors. Ideas below the bar are locked until improved and reassessed — keeping the marketplace high-quality for both sides.
+1. **Validate before you build.** An AI engine scores your idea against real Indian-market signals - TAM in ₹, local competitors, UPI/COD behaviour, government schemes, tier-2/3 adoption - *before* you commit.
+2. **Only serious ideas get talent.** A Venture Score of **70+** unlocks contributors. Ideas below the bar are locked until improved and reassessed - keeping the marketplace high-quality for both sides.
 3. **Smart team building.** A second AI pipeline suggests a lean, India-appropriate founding team structure for approved ideas.
 
 ---
@@ -45,25 +45,25 @@ Most Indian founders spend months building before discovering that their idea do
 <td width="50%" valign="top">
 
 ### For Founders
-- 🎯 **AI Venture Report** — Composite score (0–100) across Market, Competition, Feasibility, Risk & Innovation
-- 🇮🇳 **India Market Lens** — TAM in INR, Indian competitors, UPI/wallet/COD analysis, Startup India context
-- ⚠️ **Risk Radar** — Execution, funding, market & legal risk flags with India-specific rationale
-- 🔄 **Edit & Reassess** — Improve locked ideas (score < 70) and trigger a fresh AI evaluation
-- 👥 **AI Team Builder** — AI-suggested roles with category, priority, experience level & required skills
-- 📋 **Applicant Management** — Review, shortlist & build your founding team
+- 🎯 **AI Venture Report**: Composite score (0-100) across Market, Competition, Feasibility, Risk & Innovation
+- 🇮🇳 **India Market Lens**: TAM in INR, Indian competitors, UPI/wallet/COD analysis, Startup India context
+- ⚠️ **Risk Radar**: Execution, funding, market & legal risk flags with India-specific rationale
+- 🔄 **Edit & Reassess**: Improve locked ideas (score < 70) and trigger a fresh AI evaluation
+- 👥 **AI Team Builder**: AI-suggested roles with category, priority, experience level & required skills
+- 📋 **Applicant Management**: Review, shortlist & build your founding team
 
 </td>
 <td width="50%" valign="top">
 
 ### For Contributors
-- 🔍 **Browse Validated Ideas** — Only approved ideas (score ≥ 70) with posted roles are visible
-- 📝 **Structured Applications** — 3-question questionnaire + optional resume upload per role
-- 📊 **Application Tracking** — View current application statuses (updated on page load)
+- 🔍 **Browse Validated Ideas**: Only approved ideas (score ≥ 70) with posted roles are visible
+- 📝 **Structured Applications**: 3-question questionnaire + optional resume upload per role
+- 📊 **Application Tracking**: View current application statuses (updated on page load)
 
 ### For Admins
-- 📈 **Platform Overview** — Dashboard with user and idea counts, computed at page render
-- 👤 **User Management** — Activate or suspend user accounts
-- 🗂️ **Idea Moderation** — Expandable row table to review and approve/reject ideas
+- 📈 **Platform Overview**: Dashboard with user and idea counts, computed at page render
+- 👤 **User Management**: Activate or suspend user accounts
+- 🗂️ **Idea Moderation**: Expandable row table to review and approve/reject ideas
 
 </td>
 </tr>
@@ -107,9 +107,9 @@ flowchart TD
 | Step | Implementation detail |
 | :---: | --- |
 | **1** | Founder submits idea via `submitIdeaAction`. The Server Action validates the session (founder role), validates input with Zod, and inserts the idea into the database with `status = 'evaluating'` |
-| **2** | The same action fires a **fire-and-forget** `fetch()` to `POST /api/ai/evaluate` with `.catch()` error swallowing. The action returns immediately — the founder sees the idea with "Scoring…" status |
+| **2** | The same action fires a **fire-and-forget** `fetch()` to `POST /api/ai/evaluate` with `.catch()` error swallowing. The action returns immediately - the founder sees the idea with "Scoring…" status |
 | **3** | The evaluate route fetches the idea from DB, runs `evaluateIdea()` (Gemini + Groq in parallel), computes the weighted score, and persists the `ai_report` JSONB, `venture_score`, and `status` (`approved` if ≥ 70, else `pending`) |
-| **4** | The founder must **manually refresh** the page to see the completed report. The UI shows "refresh in 30–60s" as guidance — there is no automatic polling or WebSocket push |
+| **4** | The founder must **manually refresh** the page to see the completed report. The UI shows "refresh in 30-60s" as guidance - there is no automatic polling or WebSocket push |
 
 ---
 
@@ -145,7 +145,7 @@ flowchart LR
 
 Each model can fail independently. If Gemini fails, its market-potential dimension uses the rule-based fallback while Groq's competition/risk result is still used (and vice versa). If both fail, the entire report is rule-based.
 
-**Team suggestions** (`POST /api/ai/team-suggestions`) use a **sequential waterfall** — not parallel:
+**Team suggestions** (`POST /api/ai/team-suggestions`) use a **sequential waterfall**: not parallel:
 
 ```
 Gemini → (if null) → Groq → (if null) → Rule-based
@@ -182,11 +182,11 @@ where innovationProxy = min(100, market × 0.4 + feasibility × 0.6 − 5)
 | Score | Label | Database status | Effect |
 | :---: | --- | --- | --- |
 | **80+** | Exceptional | `approved` | Contributors can browse and apply |
-| **70–79** | Strong | `approved` | Contributors can browse and apply |
-| **60–69** | Promising | `pending` | Locked — founder can edit and reassess |
-| **50–59** | Moderate | `pending` | Locked — founder can edit and reassess |
-| **35–49** | Needs Work | `pending` | Locked — founder can edit and reassess |
-| **< 35** | Early Stage | `pending` | Locked — founder can edit and reassess |
+| **70-79** | Strong | `approved` | Contributors can browse and apply |
+| **60-69** | Promising | `pending` | Locked: founder can edit and reassess |
+| **50-59** | Moderate | `pending` | Locked: founder can edit and reassess |
+| **35-49** | Needs Work | `pending` | Locked: founder can edit and reassess |
+| **< 35** | Early Stage | `pending` | Locked: founder can edit and reassess |
 
 ### Evaluation Storage
 
@@ -198,20 +198,20 @@ The complete report is stored as a **JSONB column** (`ai_report`) on the `ideas`
 
 Team matching connects founders with contributors through a score-gated, role-based workflow:
 
-1. **Score gate** — Only ideas with `status = 'approved'` and `venture_score >= 70` can have roles posted. This is enforced in `saveRoleRequirementsAction` and the team-suggestions API route (returns 403 if score < 70). Contributors only see approved ideas via `getPublicIdeas()`, which filters on both conditions.
+1. **Score gate**: Only ideas with `status = 'approved'` and `venture_score >= 70` can have roles posted. This is enforced in `saveRoleRequirementsAction` and the team-suggestions API route (returns 403 if score < 70). Contributors only see approved ideas via `getPublicIdeas()`, which filters on both conditions.
 
-2. **AI-suggested roles** — When a founder opens the Team Builder for an approved idea, the frontend calls `POST /api/ai/team-suggestions`. The AI suggests roles with titles, categories (Tech/Marketing/Product/Ops/Design/Finance/Sales), experience levels, required skills, and responsibilities. The response also includes a recommended hiring order and team size. Founders can accept, edit, or dismiss these suggestions before posting.
+2. **AI-suggested roles**: When a founder opens the Team Builder for an approved idea, the frontend calls `POST /api/ai/team-suggestions`. The AI suggests roles with titles, categories (Tech/Marketing/Product/Ops/Design/Finance/Sales), experience levels, required skills, and responsibilities. The response also includes a recommended hiring order and team size. Founders can accept, edit, or dismiss these suggestions before posting.
 
-3. **Role posting** — Founders save roles to the `role_requirements` table. Each role has: title, category, experience level, skills (JSONB array), description, number of openings, and an `ai_suggested` boolean flag. Saving uses a bulk-replace strategy — all existing roles for the idea are deleted and re-inserted.
+3. **Role posting**: Founders save roles to the `role_requirements` table. Each role has: title, category, experience level, skills (JSONB array), description, number of openings, and an `ai_suggested` boolean flag. Saving uses a bulk-replace strategy - all existing roles for the idea are deleted and re-inserted.
 
-4. **Contributor applications** — Contributors apply to specific roles via the `ApplicationForm` component. The application includes:
+4. **Contributor applications**: Contributors apply to specific roles via the `ApplicationForm` component. The application includes:
    - Three required questionnaire answers: motivation, relevant experience, expected contribution
    - An optional cover message
    - An optional resume upload (PDF/DOCX, max 2 MB client-side check)
 
-5. **Resume handling** — Resumes are read client-side using `FileReader.readAsDataURL()`, producing a **Base64 data URI string**. This string is sent via the Server Action and stored in the `resume_url` TEXT column of the `applications` table. There is no external file storage service — the entire file content lives in the database as a Base64-encoded string.
+5. **Resume handling**: Resumes are read client-side using `FileReader.readAsDataURL()`, producing a **Base64 data URI string**. This string is sent via the Server Action and stored in the `resume_url` TEXT column of the `applications` table. There is no external file storage service - the entire file content lives in the database as a Base64-encoded string.
 
-6. **Application lifecycle** — Applications progress through statuses: `pending` → `shortlisted` → `accepted` / `rejected`. Founders review applicants grouped by role. Contributors can cancel their own `pending` applications (enforced by `deleteApplication` checking both `id` and `employee_id`). The unique constraint `(idea_id, employee_id, role_requirement_id)` prevents duplicate applications to the same role.
+6. **Application lifecycle**: Applications progress through statuses: `pending` → `shortlisted` → `accepted` / `rejected`. Founders review applicants grouped by role. Contributors can cancel their own `pending` applications (enforced by `deleteApplication` checking both `id` and `employee_id`). The unique constraint `(idea_id, employee_id, role_requirement_id)` prevents duplicate applications to the same role.
 
 ---
 
@@ -263,11 +263,11 @@ graph TB
 | Decision | Rationale |
 | --- | --- |
 | **Server Components first** | Data fetched on the server; only interactive elements (forms, the team builder) use `"use client"` |
-| **Raw SQL (no ORM)** | Uses `@neondatabase/serverless` tagged template literals (`sql\`...\``) — avoids Prisma/Drizzle overhead for this project's scale |
+| **Raw SQL (no ORM)** | Uses `@neondatabase/serverless` tagged template literals (`sql\`...\``) - avoids Prisma/Drizzle overhead for this project's scale |
 | **Zod validation on mutations** | Every Server Action validates input with Zod schemas before any database operation |
-| **Idempotent DDL** | All table creation uses `CREATE TABLE IF NOT EXISTS` and column additions use `ADD COLUMN IF NOT EXISTS` — bootstrap endpoints are safe to re-run |
-| **AI with graceful degradation** | Parallel calls (evaluation) or sequential waterfall (team builder) with deterministic rule-based fallback — the evaluation subsystem always produces a structured report |
-| **Async evaluation** | `submitIdeaAction` persists the idea then fires a fire-and-forget `fetch()` to the evaluate API — the submission returns immediately while AI processing happens in the background |
+| **Idempotent DDL** | All table creation uses `CREATE TABLE IF NOT EXISTS` and column additions use `ADD COLUMN IF NOT EXISTS`: bootstrap endpoints are safe to re-run |
+| **AI with graceful degradation** | Parallel calls (evaluation) or sequential waterfall (team builder) with deterministic rule-based fallback - the evaluation subsystem always produces a structured report |
+| **Async evaluation** | `submitIdeaAction` persists the idea then fires a fire-and-forget `fetch()` to the evaluate API - the submission returns immediately while AI processing happens in the background |
 
 ---
 
@@ -278,7 +278,7 @@ graph TB
 | **Framework** | Next.js 15 (App Router, Turbopack for dev) |
 | **Runtime** | React 19, TypeScript 5 (strict mode) |
 | **Styling** | Tailwind CSS v4 with `@theme` design tokens, Geist Sans & Geist Mono fonts |
-| **Authentication** | Auth.js v5 (NextAuth) — Credentials provider, JWT strategy |
+| **Authentication** | Auth.js v5 (NextAuth) - Credentials provider, JWT strategy |
 | **Database** | Neon Serverless Postgres via `@neondatabase/serverless` (raw parameterized SQL) |
 | **AI (Market analysis)** | Google Gemini 1.5 Flash (`@google/generative-ai`) |
 | **AI (Competition/risk)** | Groq Llama-3.3-70b (`groq-sdk`) |
@@ -290,7 +290,7 @@ graph TB
 
 ## 🗄️ Database Architecture
 
-VentureLens uses raw SQL against Neon Postgres. The data layer lives in `lib/db/` with typed query modules for each table. All queries use parameterized tagged template literals — no string concatenation.
+VentureLens uses raw SQL against Neon Postgres. The data layer lives in `lib/db/` with typed query modules for each table. All queries use parameterized tagged template literals - no string concatenation.
 
 ### Tables
 
@@ -314,12 +314,12 @@ erDiagram
 
 ### Key Constraints
 
-- `users.email` — UNIQUE NOT NULL
-- `users.role` — CHECK constraint restricts to `founder`, `employee`, `admin`
-- `ideas.founder_id` — FK to `users(id)` with ON DELETE CASCADE
-- `applications` — UNIQUE on `(idea_id, employee_id, role_requirement_id)` — one application per contributor per role per idea
-- `role_requirements.idea_id` — FK to `ideas(id)` with ON DELETE CASCADE
-- `applications.role_requirement_id` — FK to `role_requirements(id)` with ON DELETE SET NULL
+- `users.email`: UNIQUE NOT NULL
+- `users.role`: CHECK constraint restricts to `founder`, `employee`, `admin`
+- `ideas.founder_id`: FK to `users(id)` with ON DELETE CASCADE
+- `applications`: UNIQUE on `(idea_id, employee_id, role_requirement_id)`: one application per contributor per role per idea
+- `role_requirements.idea_id`: FK to `ideas(id)` with ON DELETE CASCADE
+- `applications.role_requirement_id`: FK to `role_requirements(id)` with ON DELETE SET NULL
 - All primary keys are UUIDs generated via `gen_random_uuid()`
 
 ### Database Bootstrap
@@ -361,8 +361,8 @@ VentureLens/
 │   │                            #   applications, profile
 │   ├── admin/dashboard/         #   layout, overview, users, ideas, profile
 │   ├── api/
-│   │   ├── ai/evaluate/         #   POST — AI evaluation pipeline
-│   │   ├── ai/team-suggestions/ #   POST — team structure suggestions
+│   │   ├── ai/evaluate/         #   POST: AI evaluation pipeline
+│   │   ├── ai/team-suggestions/ #   POST: team structure suggestions
 │   │   ├── auth/[...nextauth]/  #   NextAuth route handler
 │   │   └── db/                  #   init, migrate, seed-admin
 │   ├── globals.css              # Design system (Tailwind v4 @theme tokens)
@@ -379,7 +379,7 @@ VentureLens/
 │   ├── ai/evaluate.ts           # AI evaluation engine + rule-based fallback
 │   ├── db/                      # Typed SQL query modules: users, ideas, applications, roles
 │   ├── db.ts                    # Neon serverless client initialization
-│   ├── auth/guards.ts           # requireFounderSession() — shared page-level guard
+│   ├── auth/guards.ts           # requireFounderSession() - shared page-level guard
 │   ├── validations.ts           # Zod schemas (login, register, idea, application, profile)
 │   └── utils/getBaseUrl.ts      # Environment-aware base URL for server-to-server fetch
 ├── auth.ts                      # NextAuth v5 (Credentials provider, JWT, authorize logic)
@@ -412,12 +412,12 @@ VentureLens/
 
 ### Authentication
 
-- **Provider:** Auth.js v5 (NextAuth) with the **Credentials provider** — email, password, and role are submitted together.
+- **Provider:** Auth.js v5 (NextAuth) with the **Credentials provider**: email, password, and role are submitted together.
 - **Session strategy:** Stateless JWT. User data (`id`, `role`, `name`, `email`) is encoded into a signed JWT cookie. No server-side session store.
 - **Password hashing:** bcrypt via `bcryptjs` with **12 salt rounds** for all user registration and admin seeding.
 - **Authorize flow:** In `auth.ts`, the `authorize()` callback fetches the user by email, verifies the submitted role matches the stored role, then compares the password hash with `bcrypt.compare()`. Returns `null` (rejection) on any mismatch.
 
-### Authorization — Layer by Layer
+### Authorization: Layer by Layer
 
 Authorization is applied at multiple layers, but **not uniformly across all routes**. Here is what each layer actually does:
 
@@ -458,9 +458,9 @@ These are known limitations appropriate for the project's current stage:
 
 | Gap | Detail |
 | --- | --- |
-| **Unprotected bootstrap endpoints** | `/api/db/init`, `/api/db/migrate`, `/api/db/seed-admin` are public GET endpoints. Designed for one-time setup — should be removed or access-restricted before public deployment |
+| **Unprotected bootstrap endpoints** | `/api/db/init`, `/api/db/migrate`, `/api/db/seed-admin` are public GET endpoints. Designed for one-time setup - should be removed or access-restricted before public deployment |
 | **Unauthenticated AI routes** | `/api/ai/evaluate` and `/api/ai/team-suggestions` do not verify caller identity. An attacker knowing a valid ideaId could trigger evaluations or retrieve team suggestions |
-| **Incomplete ownership checks** | Some founder Server Actions verify role but not resource ownership — a founder could potentially act on another founder's applications or roles |
+| **Incomplete ownership checks** | Some founder Server Actions verify role but not resource ownership - a founder could potentially act on another founder's applications or roles |
 | **Default admin credentials** | `admin@venturelens.ai` / `Admin@VL2024!` hardcoded as fallback defaults. Overridable via environment variables |
 | **Client-only resume size limit** | The 2 MB file size check is enforced only in the browser (`ApplicationForm.tsx`). The Server Action has no server-side size validation |
 | **Base64 resume storage** | Entire file contents stored as Base64 in a TEXT column. Functional but not scalable for production volumes |
@@ -476,8 +476,8 @@ These are known limitations appropriate for the project's current stage:
 | **Node.js 20+** | LTS recommended |
 | **npm 9+** | Ships with Node |
 | **Neon Postgres** | [Free tier](https://neon.tech/) is sufficient |
-| Gemini API key | *Optional* — [Google AI Studio](https://aistudio.google.com/) |
-| Groq API key | *Optional* — [Groq Console](https://console.groq.com/) |
+| Gemini API key | *Optional* - [Google AI Studio](https://aistudio.google.com/) |
+| Groq API key | *Optional* - [Groq Console](https://console.groq.com/) |
 
 > Without AI keys, evaluation and team suggestions fall back to the built-in rule-based engine. The application remains functional for all workflows.
 
@@ -536,12 +536,12 @@ npm run migrate    # runs scripts/migrate.mjs against DATABASE_URL from .env
 | Variable | Required | Description |
 | --- | :---: | --- |
 | `DATABASE_URL` | **Yes** | Neon Postgres pooler connection string (use the serverless/pooler URL). The Neon client throws at module load if this is missing |
-| `AUTH_SECRET` | **Yes** | NextAuth encryption secret — 32+ characters. Generate: `openssl rand -base64 32` |
+| `AUTH_SECRET` | **Yes** | NextAuth encryption secret: 32+ characters. Generate: `openssl rand -base64 32` |
 | `NEXTAUTH_URL` | **Yes** | App's canonical URL. Must match the host exactly (scheme + port). `http://localhost:3000` for local dev |
-| `GEMINI_API_KEY` | No | Google AI Studio key — enables Gemini for market analysis and primary team suggestions |
-| `GROQ_API_KEY` | No | Groq key — enables Llama-3.3-70b for competition/risk analysis and fallback team suggestions |
+| `GEMINI_API_KEY` | No | Google AI Studio key: enables Gemini for market analysis and primary team suggestions |
+| `GROQ_API_KEY` | No | Groq key: enables Llama-3.3-70b for competition/risk analysis and fallback team suggestions |
 | `ADMIN_EMAIL` | No | Email for the seeded admin (default: `admin@venturelens.ai`) |
-| `ADMIN_PASSWORD` | No | Password for the seeded admin (default: `Admin@VL2024!`) — change immediately in any real deployment |
+| `ADMIN_PASSWORD` | No | Password for the seeded admin (default: `Admin@VL2024!`) - change immediately in any real deployment |
 
 ---
 
@@ -554,9 +554,9 @@ npm run migrate    # runs scripts/migrate.mjs against DATABASE_URL from .env
 | --- | --- |
 | `DATABASE_URL environment variable is not set` | Create `.env` in the project root. Use the Neon **pooler** (serverless) connection string, not the direct editor URL |
 | `npm run dev` crashes immediately | `DATABASE_URL` is checked at module load time (`lib/db.ts`). Ensure `.env` exists and contains it |
-| Login redirects in a loop / cookies not set | `NEXTAUTH_URL` must match your host exactly — including `http` vs `https` and port number |
+| Login redirects in a loop / cookies not set | `NEXTAUTH_URL` must match your host exactly - including `http` vs `https` and port number |
 | Tables don't exist after deploy | Hit `/api/db/init` and `/api/db/migrate` on the **live** URL, not localhost |
-| Admin login fails | Run `/api/db/seed-admin` first. Admin login is at `/login/admin` — admins have no registration flow |
+| Admin login fails | Run `/api/db/seed-admin` first. Admin login is at `/login/admin`: admins have no registration flow |
 | Idea shows "Scoring…" indefinitely | If no `GEMINI_API_KEY` / `GROQ_API_KEY` is set, the rule-based fallback should still produce a report. Check server logs for errors from `/api/ai/evaluate`. Try manually refreshing the page |
 | Team Builder returns 403 | Venture Score is below 70. Use **Edit & Reassess** to improve and re-evaluate the idea |
 | "Only locked ideas can be edited" | Approved ideas (score ≥ 70) cannot be edited. Only `pending` ideas support reassessment |
@@ -605,14 +605,14 @@ npm start
 
 These improvements are not currently implemented:
 
-- **OAuth providers** — Google/GitHub login alongside credentials
-- **External file storage** — Move resume uploads from Base64/database to an object storage service
-- **API route authentication** — Add session verification to `/api/ai/*` endpoints
-- **Complete ownership checks** — Verify resource ownership in all founder Server Actions
-- **Rate limiting** — Protect AI endpoints from abuse
-- **Server-side file validation** — Enforce resume size limits on the server
-- **Email notifications** — Notify users on application status changes
-- **Automated status refresh** — Polling or SSE for evaluation completion instead of manual page refresh
+- **OAuth providers**: Google/GitHub login alongside credentials
+- **External file storage**: Move resume uploads from Base64/database to an object storage service
+- **API route authentication**: Add session verification to `/api/ai/*` endpoints
+- **Complete ownership checks**: Verify resource ownership in all founder Server Actions
+- **Rate limiting**: Protect AI endpoints from abuse
+- **Server-side file validation**: Enforce resume size limits on the server
+- **Email notifications**: Notify users on application status changes
+- **Automated status refresh**: Polling or SSE for evaluation completion instead of manual page refresh
 
 ---
 
