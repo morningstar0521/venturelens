@@ -1,5 +1,5 @@
 // ─── AI Evaluation Engine ─────────────────────────────────────────────────────
-// Multi-model pipeline: Gemini → market potential, Groq → competition/risk
+// Multi-model pipeline: Gemini (or Groq) → market potential, Groq → competition/risk
 // Falls back to rule-based scoring if APIs are unavailable.
 
 import { GoogleGenerativeAI } from "@google/generative-ai"
@@ -72,20 +72,149 @@ function computeVentureScore(report: Omit<EvaluationReport, "ventureScore" | "mo
 
 // ── Shared Helpers ────────────────────────────────────────────────────────────
 
+// Ordered by JSON-mode reliability. Override the first choice with GROQ_MODEL.
 export const GROQ_CANDIDATE_MODELS = [
-  "qwen/qwen3.8-27b",
-  "openai/gpt-oss-120b",
   "llama-3.3-70b-versatile",
+  "openai/gpt-oss-120b",
   "llama-3.1-8b-instant",
 ]
 
-function parseJsonSafe<T>(text: string): T | null {
+// Per-request timeout so a slow model cannot exhaust the serverless time budget.
+export const AI_REQUEST_TIMEOUT_MS = 20_000
+
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash"
+
+export function parseJsonSafe<T>(text: string): T | null {
   try {
-    const cleaned = text.replace(/```json\n?/gi, "").replace(/```\n?/g, "").trim()
+    let cleaned = text
+      .replace(/<think>[\s\S]*?<\/think>/gi, "") // reasoning models
+      .replace(/```json\n?/gi, "")
+      .replace(/```\n?/g, "")
+      .trim()
+    // Keep only the outermost JSON object if the model added prose around it
+    const start = cleaned.indexOf("{")
+    const end = cleaned.lastIndexOf("}")
+    if (start !== -1 && end > start) cleaned = cleaned.slice(start, end + 1)
     return JSON.parse(cleaned) as T
   } catch (err) {
     console.warn("[AI] Failed to parse JSON response:", err)
     return null
+  }
+}
+
+// ── Output normalisation ──────────────────────────────────────────────────────
+// LLMs return loosely-typed JSON ("medium", "72", a string instead of an array).
+// The report UI expects exact shapes, so every field is coerced here and any
+// missing piece is filled from the rule-based fallback.
+
+type Level = "Low" | "Medium" | "High"
+type Demand = MarketPotential["demandLevel"]
+
+function toLevel(v: unknown, d: Level): Level {
+  const s = String(v ?? "").trim().toLowerCase()
+  if (!s) return d
+  if (s.startsWith("h")) return "High"
+  if (s.startsWith("l")) return "Low"
+  return "Medium"
+}
+
+function toDemand(v: unknown, d: Demand): Demand {
+  const s = String(v ?? "").trim().toLowerCase()
+  if (!s) return d
+  if (s.includes("very")) return "Very High"
+  if (s.startsWith("h")) return "High"
+  if (s.startsWith("l")) return "Low"
+  return "Medium"
+}
+
+function toScore(v: unknown, d: number): number {
+  const n = typeof v === "number" ? v : parseFloat(String(v ?? ""))
+  return Number.isFinite(n) ? Math.round(Math.max(0, Math.min(100, n))) : d
+}
+
+function toText(v: unknown, d: string): string {
+  return typeof v === "string" && v.trim() ? v.trim() : d
+}
+
+function toStrings(v: unknown, d: string[], max: number): string[] {
+  const list = Array.isArray(v)
+    ? v.map((x) => (typeof x === "string" ? x : x && typeof x === "object" ? Object.values(x).join(" - ") : String(x ?? "")))
+    : typeof v === "string" ? [v] : []
+  const clean = list.map((s) => s.trim()).filter(Boolean).slice(0, max)
+  return clean.length ? clean : d
+}
+
+function obj(v: unknown): Record<string, unknown> {
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {}
+}
+
+function normalizeMarket(raw: unknown, fb: MarketPotential): MarketPotential {
+  const r = obj(raw)
+  return {
+    tam:               toText(r.tam, fb.tam),
+    demandLevel:       toDemand(r.demandLevel, fb.demandLevel),
+    growthTrends:      toText(r.growthTrends, fb.growthTrends),
+    customerNeedLevel: toText(r.customerNeedLevel, fb.customerNeedLevel),
+    score:             toScore(r.score, fb.score),
+  }
+}
+
+function normalizeCompetition(raw: unknown, fb: CompetitionAnalysis): CompetitionAnalysis {
+  const r = obj(raw)
+  return {
+    directCompetitors:   toStrings(r.directCompetitors, fb.directCompetitors, 4),
+    indirectCompetitors: toStrings(r.indirectCompetitors, fb.indirectCompetitors, 3),
+    differentiationGaps: toStrings(r.differentiationGaps, fb.differentiationGaps, 3),
+    score:               toScore(r.score, fb.score),
+  }
+}
+
+function normalizeRisks(raw: unknown, fb: RiskFactors): RiskFactors {
+  const r = obj(raw)
+  const one = (key: "execution" | "funding" | "market" | "legal") => {
+    const item = obj(r[key])
+    // Some models return just "High" instead of { level, detail }
+    const level = typeof r[key] === "string" ? r[key] : item.level
+    return {
+      level:  toLevel(level, fb[key].level),
+      detail: toText(item.detail, fb[key].detail),
+    }
+  }
+  return {
+    execution: one("execution"),
+    funding:   one("funding"),
+    market:    one("market"),
+    legal:     one("legal"),
+    score:     toScore(r.score, fb.score),
+  }
+}
+
+function normalizeFeasibility(raw: unknown, fb: FeasibilityAnalysis): FeasibilityAnalysis {
+  const r = obj(raw)
+  return {
+    analysis: toText(r.analysis, fb.analysis),
+    score:    toScore(r.score, fb.score),
+  }
+}
+
+/**
+ * Makes any stored report safe to render. Used when reading `ai_report` from
+ * the DB so reports saved before normalisation existed no longer crash the UI.
+ */
+export function normalizeStoredReport(raw: unknown, idea: IdeaContext): EvaluationReport {
+  const fb = ruleBased(idea)
+  const r = obj(raw)
+  const parts = {
+    marketPotential: normalizeMarket(r.marketPotential, fb.marketPotential),
+    competition:     normalizeCompetition(r.competition, fb.competition),
+    risks:           normalizeRisks(r.risks, fb.risks),
+    feasibility:     normalizeFeasibility(r.feasibility, fb.feasibility),
+    suggestions:     toStrings(r.suggestions, fb.suggestions, 5),
+  }
+  return {
+    ...parts,
+    ventureScore: toScore(r.ventureScore, computeVentureScore(parts)),
+    modelUsed:    toText(r.modelUsed, "Rule-based engine"),
   }
 }
 
@@ -96,7 +225,7 @@ async function callGroqWithFallback(
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) return null
 
-  const groq = new Groq({ apiKey })
+  const groq = new Groq({ apiKey, timeout: AI_REQUEST_TIMEOUT_MS, maxRetries: 0 })
   const models = [
     process.env.GROQ_MODEL,
     ...GROQ_CANDIDATE_MODELS,
@@ -163,10 +292,15 @@ async function analyzeMarketWithGemini(idea: IdeaContext): Promise<MarketPotenti
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
-    const result = await model.generateContent(getMarketPrompt(idea))
+    const model = genAI.getGenerativeModel({
+      model: GEMINI_MODEL,
+      generationConfig: { responseMimeType: "application/json", temperature: 0.4 },
+    })
+    const result = await model.generateContent(getMarketPrompt(idea), { timeout: AI_REQUEST_TIMEOUT_MS })
     const text = result.response.text().trim()
-    return parseJsonSafe<MarketPotential>(text)
+    const parsed = parseJsonSafe<MarketPotential>(text)
+    if (!parsed || parsed.score === undefined || !parsed.tam) return null
+    return parsed
   } catch (err) {
     console.warn("[AI/Gemini] Market analysis failed:", err)
     return null
@@ -181,7 +315,7 @@ async function analyzeMarketWithGroq(idea: IdeaContext): Promise<{ data: MarketP
   if (!res) return null
 
   const parsed = parseJsonSafe<MarketPotential>(res.content)
-  if (!parsed || typeof parsed.score !== "number" || !parsed.tam) {
+  if (!parsed || parsed.score === undefined || !parsed.tam) {
     return null
   }
   return { data: parsed, model: res.model }
@@ -191,7 +325,7 @@ async function analyzeMarket(idea: IdeaContext): Promise<{ data: MarketPotential
   // 1. Try Gemini first if key is present
   const geminiResult = await analyzeMarketWithGemini(idea)
   if (geminiResult) {
-    return { data: geminiResult, model: "Gemini 1.5 Flash" }
+    return { data: geminiResult, model: `Gemini (${GEMINI_MODEL})` }
   }
 
   // 2. Fall back to Groq if Gemini is absent or fails
@@ -371,22 +505,27 @@ export interface IdeaContext {
 // ── Main Evaluation Function ──────────────────────────────────────────────────
 
 export async function evaluateIdea(idea: IdeaContext): Promise<EvaluationReport> {
-  // Run both analysis pipelines in parallel
-  const [marketResult, groqResult] = await Promise.all([
+  // Run both analysis pipelines in parallel. allSettled: one pipeline throwing
+  // must never discard the other's result.
+  const [marketSettled, groqSettled] = await Promise.allSettled([
     analyzeMarket(idea),
     analyzeCompetitionWithGroq(idea),
   ])
+  const marketResult = marketSettled.status === "fulfilled" ? marketSettled.value : null
+  const groqResult   = groqSettled.status   === "fulfilled" ? groqSettled.value   : null
+  if (marketSettled.status === "rejected") console.warn("[AI] Market pipeline failed:", marketSettled.reason)
+  if (groqSettled.status === "rejected")   console.warn("[AI] Competition pipeline failed:", groqSettled.reason)
 
   const fallback = ruleBased(idea)
   const modelsUsed: string[] = []
 
-  const marketPotential = marketResult?.data ?? fallback.marketPotential
+  const marketPotential = normalizeMarket(marketResult?.data, fallback.marketPotential)
   if (marketResult) modelsUsed.push(marketResult.model)
 
-  const competition  = groqResult?.data.competition  ?? fallback.competition
-  const risks        = groqResult?.data.risks        ?? fallback.risks
-  const feasibility  = groqResult?.data.feasibility  ?? fallback.feasibility
-  const suggestions  = groqResult?.data.suggestions  ?? fallback.suggestions
+  const competition  = normalizeCompetition(groqResult?.data.competition, fallback.competition)
+  const risks        = normalizeRisks(groqResult?.data.risks, fallback.risks)
+  const feasibility  = normalizeFeasibility(groqResult?.data.feasibility, fallback.feasibility)
+  const suggestions  = toStrings(groqResult?.data.suggestions, fallback.suggestions, 5)
   if (groqResult) modelsUsed.push(`Groq (${groqResult.model})`)
 
   const uniqueModels = Array.from(new Set(modelsUsed))
