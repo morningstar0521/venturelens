@@ -6,6 +6,14 @@ import { StatusBadge } from "@/components/dashboard/StatusBadge"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Cpu, Pencil, RefreshCw } from "lucide-react"
+import { RetryEvaluationButton } from "@/components/dashboard/RetryEvaluationButton"
+import { normalizeStoredReport } from "@/lib/ai/evaluate"
+
+// The retry action runs the AI evaluation via after(); give it time to finish.
+export const maxDuration = 60
+
+// If an idea has been "evaluating" longer than this, offer a manual retry.
+const STUCK_AFTER_MS = 2 * 60 * 1000
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -21,6 +29,22 @@ export default async function IdeaReportPage({ params }: { params: Promise<{ id:
   if (!idea || idea.founder_id !== session.user.id) notFound()
   const existingRoles = await getRolesByIdea(id).catch(() => [])
   const isLocked = idea.ai_report && (idea.venture_score ?? 0) < 70
+  // Coerce stored JSON into the exact shape the report UI expects, so a loosely
+  // formatted LLM response saved earlier can never crash the page.
+  const report = idea.ai_report
+    ? normalizeStoredReport(idea.ai_report, {
+        title:            idea.title,
+        description:      idea.description,
+        problemStatement: idea.problem_statement,
+        solution:         idea.solution,
+        targetAudience:   idea.target_audience,
+        revenueModel:     idea.revenue_model,
+        industry:         idea.industry,
+        stage:            idea.stage,
+      })
+    : null
+  const lastTouched = new Date(idea.evaluated_at ?? idea.created_at).getTime()
+  const looksStuck = idea.status === "evaluating" && Date.now() - lastTouched > STUCK_AFTER_MS
 
   return (
     <div className="space-y-6">
@@ -88,20 +112,26 @@ export default async function IdeaReportPage({ params }: { params: Promise<{ id:
           >
             Click to refresh →
           </Link>
+          {looksStuck && (
+            <div className="flex flex-col items-center gap-3 pt-2 border-t border-white/5">
+              <p className="text-xs text-white/40">Taking longer than expected?</p>
+              <RetryEvaluationButton ideaId={id} label="Retry evaluation" />
+            </div>
+          )}
         </div>
-      ) : idea.ai_report ? (
+      ) : report ? (
         <EvaluationReportView
-          report={idea.ai_report}
+          report={report}
           ideaId={id}
           hasPostedRoles={existingRoles.length > 0}
         />
       ) : (
         <div className="glass-panel rounded-3xl p-12 border border-white/5 text-center">
-          <p className="text-white/50 mb-4">No AI evaluation report available for this idea yet.</p>
-          <p className="text-sm text-white/30">
-            This idea was submitted before the AI evaluation feature was added.
-            Re-submit your idea to generate a report.
+          <p className="text-white/50 mb-2">No AI evaluation report available for this idea yet.</p>
+          <p className="text-sm text-white/30 mb-6">
+            The last evaluation did not complete. Run it again to generate your report.
           </p>
+          <RetryEvaluationButton ideaId={id} />
         </div>
       )}
     </div>

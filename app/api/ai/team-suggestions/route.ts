@@ -3,7 +3,7 @@ import { getIdeaById } from "@/lib/db/ideas"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import Groq from "groq-sdk"
 import { auth } from "@/auth"
-import { GROQ_CANDIDATE_MODELS } from "@/lib/ai/evaluate"
+import { GROQ_CANDIDATE_MODELS, GEMINI_MODEL, AI_REQUEST_TIMEOUT_MS, parseJsonSafe } from "@/lib/ai/evaluate"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -80,10 +80,10 @@ async function suggestWithGemini(idea: Parameters<typeof buildPrompt>[0], existi
   if (!apiKey) return null
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
-    const result = await model.generateContent(buildPrompt(idea, existingRoles, singleRole))
-    const text = result.response.text().trim().replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
-    return JSON.parse(text) as TeamSuggestion
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL })
+    const result = await model.generateContent(buildPrompt(idea, existingRoles, singleRole), { timeout: AI_REQUEST_TIMEOUT_MS })
+    const parsed = parseJsonSafe<TeamSuggestion>(result.response.text())
+    return parsed && Array.isArray(parsed.recommended_roles) ? parsed : null
   } catch (err) {
     console.warn("[team-suggestions/Gemini] failed:", err)
     return null
@@ -96,7 +96,7 @@ async function suggestWithGroq(idea: Parameters<typeof buildPrompt>[0], existing
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) return null
 
-  const groq = new Groq({ apiKey })
+  const groq = new Groq({ apiKey, timeout: AI_REQUEST_TIMEOUT_MS, maxRetries: 0 })
   const prompt = buildPrompt(idea, existingRoles, singleRole)
   const models = [
     process.env.GROQ_MODEL,
@@ -217,6 +217,7 @@ function ruleBased(idea: Parameters<typeof buildPrompt>[0], existingRoles: strin
 // ── Route handler ─────────────────────────────────────────────────────────────
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   try {
