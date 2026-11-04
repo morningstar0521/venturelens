@@ -22,7 +22,7 @@ function RiskLevel({ level }: { level: "Low" | "Medium" | "High" }) {
     Low:    { icon: CheckCircle2, color: "text-success", bg: "bg-success/10 border-success/20" },
     Medium: { icon: AlertTriangle, color: "text-btn",    bg: "bg-btn/10 border-btn/20" },
     High:   { icon: XCircle,      color: "text-error",   bg: "bg-error/10 border-error/20" },
-  }[level]
+  }[level] ?? { icon: AlertTriangle, color: "text-btn", bg: "bg-btn/10 border-btn/20" }
   const Icon = cfg.icon
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${cfg.bg} ${cfg.color}`}>
