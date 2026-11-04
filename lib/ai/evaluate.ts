@@ -72,12 +72,22 @@ function computeVentureScore(report: Omit<EvaluationReport, "ventureScore" | "mo
 
 // ── Shared Helpers ────────────────────────────────────────────────────────────
 
-// Ordered by JSON-mode reliability. Override the first choice with GROQ_MODEL.
+// Override the first choice with GROQ_MODEL. Keep this list in sync with
+// https://console.groq.com/docs/deprecations — the Llama 3.x models were shut
+// down on 2026-08-16 and now return 404 model_not_found.
 export const GROQ_CANDIDATE_MODELS = [
-  "llama-3.3-70b-versatile",
   "openai/gpt-oss-120b",
-  "llama-3.1-8b-instant",
+  "qwen/qwen3.8-27b",
+  "openai/gpt-oss-20b",
 ]
+
+// Reasoning models spend completion tokens on hidden reasoning before the JSON.
+// With a small max_tokens budget the JSON is never written and Groq returns
+// json_validate_failed with an empty failed_generation. Keep reasoning short
+// and the budget generous.
+export function groqModelOptions(model: string): Record<string, unknown> {
+  return model.startsWith("openai/gpt-oss") ? { reasoning_effort: "low" } : {}
+}
 
 // Per-request timeout so a slow model cannot exhaust the serverless time budget.
 export const AI_REQUEST_TIMEOUT_MS = 20_000
@@ -220,7 +230,7 @@ export function normalizeStoredReport(raw: unknown, idea: IdeaContext): Evaluati
 
 async function callGroqWithFallback(
   prompt: string,
-  maxTokens = 1200
+  maxTokens = 2000
 ): Promise<{ content: string; model: string } | null> {
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) return null
@@ -243,6 +253,7 @@ async function callGroqWithFallback(
         temperature: 0.4,
         max_tokens: maxTokens,
         response_format: { type: "json_object" },
+        ...groqModelOptions(model),
       })
       const text = completion.choices[0]?.message?.content?.trim() ?? ""
       if (text) {
@@ -311,7 +322,7 @@ async function analyzeMarketWithGemini(idea: IdeaContext): Promise<MarketPotenti
 
 async function analyzeMarketWithGroq(idea: IdeaContext): Promise<{ data: MarketPotential; model: string } | null> {
   const prompt = getMarketPrompt(idea)
-  const res = await callGroqWithFallback(prompt, 600)
+  const res = await callGroqWithFallback(prompt, 2000)
   if (!res) return null
 
   const parsed = parseJsonSafe<MarketPotential>(res.content)
@@ -389,7 +400,7 @@ Respond with this exact JSON (no markdown):
   "suggestions": ["max 5 actionable suggestions tailored for Indian market entry and growth"]
 }`
 
-  const res = await callGroqWithFallback(prompt, 1400)
+  const res = await callGroqWithFallback(prompt, 3000)
   if (!res) return null
 
   const parsed = parseJsonSafe<{

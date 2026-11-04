@@ -3,7 +3,7 @@ import { getIdeaById } from "@/lib/db/ideas"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import Groq from "groq-sdk"
 import { auth } from "@/auth"
-import { GROQ_CANDIDATE_MODELS, GEMINI_MODEL, AI_REQUEST_TIMEOUT_MS, parseJsonSafe } from "@/lib/ai/evaluate"
+import { GROQ_CANDIDATE_MODELS, GEMINI_MODEL, AI_REQUEST_TIMEOUT_MS, parseJsonSafe, groqModelOptions } from "@/lib/ai/evaluate"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -113,8 +113,9 @@ async function suggestWithGroq(idea: Parameters<typeof buildPrompt>[0], existing
         model,
         messages: [{ role: "user", content: prompt }],
         temperature: 0.4,
-        max_tokens: 1200,
+        max_tokens: 3000,
         response_format: { type: "json_object" },
+        ...groqModelOptions(model),
       })
       const text = (completion.choices[0]?.message?.content ?? "").trim()
         .replace(/```json\n?/gi, "").replace(/```\n?/g, "").trim()
