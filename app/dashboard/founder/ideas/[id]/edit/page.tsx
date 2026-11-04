@@ -5,6 +5,9 @@ import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
+// Server actions on this page run the AI evaluation via after(); give it time to finish.
+export const maxDuration = 60
+
 export const metadata = { title: "Edit & Reassess Idea — VentureLens" }
 
 export default async function EditIdeaPage({ params }: { params: Promise<{ id: string }> }) {

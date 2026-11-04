@@ -1,13 +1,14 @@
 // ─── AI Evaluate API Route ────────────────────────────────────────────────────
-// POST /api/ai/evaluate — triggers AI evaluation for a given idea ID
-// Called from the submitIdeaAction server action after idea creation.
+// POST /api/ai/evaluate — manually (re)triggers AI evaluation for an idea.
+// Normal submissions no longer call this route: server actions run the
+// evaluation in-process with `after()` (see actions/ideas.ts).
 import { NextRequest, NextResponse } from "next/server"
-import { evaluateIdea } from "@/lib/ai/evaluate"
-import { getIdeaById, updateIdeaReport } from "@/lib/db/ideas"
-import { IdeaStatus } from "@/lib/db/ideas"
+import { getIdeaById, updateIdeaStatus } from "@/lib/db/ideas"
+import { runEvaluation } from "@/lib/ai/run-evaluation"
 import { auth } from "@/auth"
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic"
+export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,50 +22,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Idea not found" }, { status: 404 })
     }
 
-    // Verify caller: either internal service with Bearer AUTH_SECRET or idea owner / admin session
-    const authHeader = req.headers.get("authorization")
-    const internalToken = process.env.AUTH_SECRET ? `Bearer ${process.env.AUTH_SECRET}` : null
-    const isInternalAuthorized = Boolean(internalToken && authHeader === internalToken)
-
-    let isUserAuthorized = false
-    if (!isInternalAuthorized) {
-      try {
-        const session = await auth()
-        if (session?.user && (session.user.id === idea.founder_id || session.user.role === "admin")) {
-          isUserAuthorized = true
-        }
-      } catch {
-        // Session lookup failed
-      }
-    }
-
-    if (!isInternalAuthorized && !isUserAuthorized) {
+    // Caller must be the idea owner or an admin
+    const session = await auth().catch(() => null)
+    const allowed = Boolean(
+      session?.user && (session.user.id === idea.founder_id || session.user.role === "admin")
+    )
+    if (!allowed) {
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    // Run the AI evaluation pipeline
-    const report = await evaluateIdea({
-      title:            idea.title,
-      description:      idea.description,
-      problemStatement: idea.problem_statement,
-      solution:         idea.solution,
-      targetAudience:   idea.target_audience,
-      revenueModel:     idea.revenue_model,
-      industry:         idea.industry,
-      stage:            idea.stage,
-    })
-
-    // Determine status based on venture score
-    const newStatus: IdeaStatus = report.ventureScore >= 70 ? "approved" : "pending"
-
-    // Persist report and score back to DB
-    await updateIdeaReport(ideaId, {
-      aiReport:     report,
-      ventureScore: report.ventureScore,
-      status:       newStatus,
-    })
-
-    return NextResponse.json({ ok: true, ventureScore: report.ventureScore, modelUsed: report.modelUsed })
+    await updateIdeaStatus(ideaId, "evaluating")
+    const result = await runEvaluation(ideaId)
+    return NextResponse.json(result, { status: result.ok ? 200 : 500 })
   } catch (err) {
     console.error("[api/ai/evaluate]", err)
     return NextResponse.json({ ok: false, error: String(err) }, { status: 500 })

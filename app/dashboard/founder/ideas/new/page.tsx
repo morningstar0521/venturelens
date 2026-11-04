@@ -3,6 +3,9 @@ import { SubmitIdeaForm } from "@/components/dashboard/SubmitIdeaForm"
 
 export const metadata = { title: "Submit Idea — VentureLens" }
 
+// Server actions on this page run the AI evaluation via after(); give it time to finish.
+export const maxDuration = 60
+
 export default async function NewIdeaPage() {
   await requireFounderSession()
 

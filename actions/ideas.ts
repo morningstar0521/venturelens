@@ -4,7 +4,8 @@ import { auth } from "@/auth"
 import { createIdea, getIdeaById, updateIdeaForReassessment, updateIdeaStatus, IdeaStage, IdeaStatus } from "@/lib/db/ideas"
 import { IdeaSchema } from "@/lib/validations"
 import { revalidatePath } from "next/cache"
-import { getBaseUrl } from "@/lib/utils/getBaseUrl"
+import { after } from "next/server"
+import { runEvaluation } from "@/lib/ai/run-evaluation"
 
 export async function submitIdeaAction(formData: FormData) {
   const session = await auth()
@@ -46,16 +47,10 @@ export async function submitIdeaAction(formData: FormData) {
     return { error: "Failed to submit idea. Please try again." }
   }
 
-  // Trigger AI evaluation asynchronously (fire-and-forget)
-  // Use absolute URL from env so it works in server context
-  fetch(`${getBaseUrl()}/api/ai/evaluate`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(process.env.AUTH_SECRET ? { Authorization: `Bearer ${process.env.AUTH_SECRET}` } : {}),
-    },
-    body: JSON.stringify({ ideaId }),
-  }).catch((err) => console.error("[submitIdea] AI trigger failed:", err))
+  // Run AI evaluation after the response is sent. `after()` keeps the
+  // serverless function alive until it finishes (a bare un-awaited fetch can be
+  // frozen by Vercel before it is ever sent, leaving the idea stuck).
+  after(() => runEvaluation(ideaId))
 
   revalidatePath("/dashboard/founder/ideas")
   revalidatePath("/admin/dashboard/ideas")
@@ -112,20 +107,37 @@ export async function reassessIdeaAction(ideaId: string, formData: FormData) {
     return { error: "Failed to update idea. Please try again." }
   }
 
-  fetch(`${getBaseUrl()}/api/ai/evaluate`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(process.env.AUTH_SECRET ? { Authorization: `Bearer ${process.env.AUTH_SECRET}` } : {}),
-    },
-    body: JSON.stringify({ ideaId }),
-  }).catch((err) => console.error("[reassessIdea] AI trigger failed:", err))
+  after(() => runEvaluation(ideaId))
 
   revalidatePath(`/dashboard/founder/ideas/${ideaId}`)
   revalidatePath("/dashboard/founder/ideas")
   revalidatePath("/dashboard/founder/team")
   revalidatePath("/admin/dashboard/ideas")
 
+  return { success: true }
+}
+
+export async function retryEvaluationAction(ideaId: string) {
+  const session = await auth()
+  if (!session?.user || (session.user.role !== "founder" && session.user.role !== "admin")) {
+    return { error: "Unauthorized" }
+  }
+
+  const idea = await getIdeaById(ideaId)
+  if (!idea || (session.user.role !== "admin" && idea.founder_id !== session.user.id)) {
+    return { error: "Idea not found" }
+  }
+
+  try {
+    await updateIdeaStatus(ideaId, "evaluating")
+  } catch {
+    return { error: "Could not start evaluation. Please try again." }
+  }
+
+  after(() => runEvaluation(ideaId))
+
+  revalidatePath(`/dashboard/founder/ideas/${ideaId}`)
+  revalidatePath("/dashboard/founder/ideas")
   return { success: true }
 }
 
