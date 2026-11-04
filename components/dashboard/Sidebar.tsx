@@ -182,7 +182,13 @@ export function Sidebar({ role, userName, links, isCollapsed = false, onToggle }
               {!isCollapsed && <span className="truncate">{userName}</span>}
             </Link>
             <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={async () => {
+                // Clear the session without letting Auth.js build the redirect URL:
+                // it resolves it against NEXTAUTH_URL/AUTH_URL, which sent users to
+                // localhost:3000 when that env var was misconfigured.
+                await signOut({ redirect: false })
+                window.location.href = "/"
+              }}
               className={`flex items-center gap-2 text-sm text-error/70 hover:text-error transition-colors ${isCollapsed ? "justify-center" : "w-full"}`}
               title={isCollapsed ? "Sign out" : ""}
             >
